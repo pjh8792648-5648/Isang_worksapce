@@ -64,6 +64,657 @@ const S = {
   grid2: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 },
 };
 
+/* ════════════════════════════════════════
+   HOME TAB
+════════════════════════════════════════ */
+function HomeTab({ members, minutes, logs, events, calYear, calMonth, setMinuteModal, setTab }) {
+  const eventsThisMonth = events.filter(e => {
+    const [ey, em] = e.date.split("-").map(Number);
+    return ey === calYear && em === calMonth + 1;
+  });
+  const membersOfDept = (dept) => members.filter(m => m.dept === dept);
+
+  return (
+    <div>
+      <div style={{ marginBottom:24 }}>
+        <div style={{ fontSize:11, color:"#94A3B8", fontWeight:700, letterSpacing:1.5, marginBottom:6 }}>HONGIK UNIV · MATH EDUCATION</div>
+        <div style={{ fontSize:26, fontWeight:900 }}>제 39대 학생회 <span style={{ color:BRAND }}>이상</span></div>
+        <div style={{ fontSize:13, color:"#94A3B8", marginTop:3 }}>2025년 워크스페이스</div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:22 }}>
+        {[
+          { label:"총 부원", value:members.length, icon:"👥", c:"#4A8CFF" },
+          { label:"회의록", value:minutes.length, icon:"📋", c:"#8B5CF6" },
+          { label:"업무 일지", value:logs.length, icon:"📝", c:"#FF6B6B" },
+          { label:"이달 일정", value:eventsThisMonth.length, icon:"📅", c:"#38C9A0" },
+          { label:"완료 업무", value:logs.filter(l=>l.status==="완료").length, icon:"✅", c:"#F59E0B" },
+        ].map(s => (
+          <div key={s.label} style={{ ...S.card, textAlign:"center", padding:18 }}>
+            <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
+            <div style={{ fontSize:24, fontWeight:900, color:s.c }}>{s.value}</div>
+            <div style={{ fontSize:11, color:"#94A3B8", fontWeight:600, marginTop:2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:16, marginBottom:16 }}>
+        <div style={S.card}>
+          <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>부서 현황</div>
+          {DEPARTMENTS.map(dept => {
+            const c = DEPT_COLORS[dept];
+            const dm = membersOfDept(dept);
+            const dl = logs.filter(l => l.dept === dept);
+            const pct = dl.length ? (dl.filter(l=>l.status==="완료").length / dl.length) * 100 : 0;
+            return (
+              <div key={dept} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:"1px solid #F7F9FC" }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:c, flexShrink:0 }} />
+                <div style={{ fontWeight:700, width:56, fontSize:14 }}>{dept}</div>
+                <div style={{ flex:1, height:5, background:"#EDF2F7", borderRadius:3 }}>
+                  <div style={{ height:"100%", borderRadius:3, background:c, width:`${pct}%`, transition:"width .3s" }} />
+                </div>
+                <div style={{ fontSize:11, color:"#94A3B8", width:68, textAlign:"right" }}>{dm.length}명 · {dl.length}건</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={S.card}>
+          <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>다가오는 일정</div>
+          {events.filter(e=>e.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5).map(e => (
+            <div key={e.id} style={{ display:"flex", gap:10, alignItems:"center", padding:"8px 0", borderBottom:"1px solid #F7F9FC" }}>
+              <div style={{ width:7, height:7, borderRadius:"50%", background:e.color, flexShrink:0 }} />
+              <div style={{ flex:1, fontSize:13, fontWeight:600 }}>{e.title}</div>
+              <div style={{ fontSize:11, color:"#94A3B8" }}>{e.date.slice(5)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={S.card}>
+        <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>최근 회의록</div>
+        <div style={{ display:"flex", gap:12 }}>
+          {minutes.slice(0,3).map(m => (
+            <div key={m.id} onClick={() => { setMinuteModal(m); setTab("minutes"); }}
+              style={{ flex:1, padding:14, borderRadius:10, background:"#F8FAFC", border:"1px solid #EDF2F7", cursor:"pointer" }}>
+              <span style={S.tag(DEPT_COLORS[m.dept])}>{m.dept}</span>
+              <div style={{ fontWeight:800, marginTop:8, marginBottom:3, fontSize:14 }}>{m.title}</div>
+              <div style={{ fontSize:11, color:"#94A3B8" }}>{m.date}</div>
+              <div style={{ fontSize:12, color:"#718096", marginTop:4 }}>{m.summary}</div>
+              <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                {m.pdfName && <span style={{ ...S.tag("#8B5CF6"), fontSize:10 }}>📄 PDF</span>}
+                {m.secretaryName && <span style={{ ...S.tag("#F59E0B"), fontSize:10 }}>📝 서기록</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   MEMBER FORM MODAL
+════════════════════════════════════════ */
+function MemberFormModal({ data, setData, onSave, onClose, onDelete, isEdit }) {
+  return (
+    <div style={S.overlay}>
+      <div style={S.modal()}>
+        <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>{isEdit ? "부원 정보 수정" : "새 부원 등록"}</div>
+        <div style={S.grid2}>
+          <div><label style={S.label}>이름</label><input style={S.input} value={data.name} onChange={e=>setData(p=>({...p,name:e.target.value}))} /></div>
+          <div><label style={S.label}>학번</label><input style={S.input} value={data.studentId} onChange={e=>setData(p=>({...p,studentId:e.target.value}))} /></div>
+        </div>
+        <div style={{ ...S.grid2, marginTop:12 }}>
+          <div><label style={S.label}>부서</label>
+            <select style={S.input} value={data.dept} onChange={e=>setData(p=>({...p,dept:e.target.value}))}>
+              {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
+            </select>
+          </div>
+          <div><label style={S.label}>직책</label>
+            <select style={S.input} value={data.role} onChange={e=>setData(p=>({...p,role:e.target.value}))}>
+              {ROLES.map(r=><option key={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{ marginTop:12 }}><label style={S.label}>전화번호</label><input style={S.input} value={data.phone} onChange={e=>setData(p=>({...p,phone:e.target.value}))} placeholder="010-0000-0000" /></div>
+        <div style={{ marginTop:12 }}><label style={S.label}>이메일</label><input style={S.input} value={data.email} onChange={e=>setData(p=>({...p,email:e.target.value}))} placeholder="example@hongik.ac.kr" /></div>
+        <div style={{ marginTop:12, marginBottom:22 }}><label style={S.label}>가입 연도</label>
+          <input style={S.input} type="number" value={data.joinYear} onChange={e=>setData(p=>({...p,joinYear:Number(e.target.value)}))} />
+        </div>
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+          <button style={S.btn("secondary")} onClick={onClose}>취소</button>
+          {isEdit && <button style={S.btn("danger")} onClick={onDelete}>삭제</button>}
+          <button style={S.btn()} onClick={onSave}>저장</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   MEMBERS TAB
+════════════════════════════════════════ */
+function MembersTab({ members, setMembers, logs, memberModal, setMemberModal }) {
+  const [deptFilter, setDeptFilter] = useState("전체");
+  const [editMember, setEditMember] = useState(null);
+  const emptyForm = { name:"", dept:"기획부", role:"부원", studentId:"", phone:"", email:"", joinYear:2025 };
+  const [form, setForm] = useState(emptyForm);
+
+  const filtered = deptFilter === "전체" ? members : members.filter(m => m.dept === deptFilter);
+
+  function saveNew() {
+    if (!form.name || !form.studentId) return;
+    setMembers(p => [...p, { ...form, id: Date.now() }]);
+    setForm(emptyForm);
+    setMemberModal(null);
+  }
+  function saveEdit() {
+    setMembers(p => p.map(m => m.id === editMember.id ? editMember : m));
+    setEditMember(null); setMemberModal(null);
+  }
+  function del(id) {
+    setMembers(p => p.filter(m => m.id !== id));
+    setEditMember(null); setMemberModal(null);
+  }
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
+        <div style={S.sectionTitle}>👥 부원 관리</div>
+        <button style={S.btn()} onClick={()=>setMemberModal("add")}>+ 부원 등록</button>
+      </div>
+      <div style={{ display:"flex", gap:8, marginBottom:18 }}>
+        {["전체",...DEPARTMENTS].map(d=>(
+          <button key={d} style={{ ...S.btn(deptFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setDeptFilter(d)}>{d}</button>
+        ))}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
+        {filtered.map(m => {
+          const c = DEPT_COLORS[m.dept];
+          const mLogs = logs.filter(l=>l.memberId===m.id);
+          return (
+            <div key={m.id} style={{ ...S.card, cursor:"pointer", padding:18 }}
+              onClick={()=>{ setEditMember({...m}); setMemberModal("edit"); }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                <div style={{ width:42, height:42, borderRadius:12, background:c+"20", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:c }}>{m.name[0]}</div>
+                <div>
+                  <div style={{ fontWeight:900, fontSize:15 }}>{m.name}</div>
+                  <div style={{ fontSize:11, color:"#94A3B8" }}>{m.studentId}</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+                <span style={S.tag(c)}>{m.dept}</span>
+                <span style={S.tag("#8B5CF6")}>{m.role}</span>
+              </div>
+              <div style={{ fontSize:12, color:"#718096" }}>{m.phone}</div>
+              <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{m.email}</div>
+              <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #F0F5FF", display:"flex", justifyContent:"space-between" }}>
+                <span style={{ fontSize:11, color:"#94A3B8" }}>업무 {mLogs.length}건</span>
+                <span style={{ fontSize:11, color:"#38C9A0", fontWeight:700 }}>완료 {mLogs.filter(l=>l.status==="완료").length}건</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {memberModal==="add" && (
+        <MemberFormModal data={form} setData={setForm} onSave={saveNew} onClose={()=>setMemberModal(null)} />
+      )}
+      {memberModal==="edit" && editMember && (
+        <MemberFormModal data={editMember} setData={setEditMember} onSave={saveEdit} onClose={()=>{ setMemberModal(null); setEditMember(null); }} onDelete={()=>del(editMember.id)} isEdit />
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   MINUTES TAB
+════════════════════════════════════════ */
+function MinutesTab({ minutes, setMinutes, minuteModal, setMinuteModal, minuteFilter, setMinuteFilter }) {
+  const pdfRef = useRef();
+  const secRef = useRef();
+  const emptyForm = { title:"", date:"", dept:"기획부", author:"", summary:"", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null };
+  const [form, setForm] = useState(emptyForm);
+
+  function handleFile(e, type) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      if (type === "pdf") setForm(p=>({...p, pdfName:file.name, pdfData:ev.target.result}));
+      else setForm(p=>({...p, secretaryName:file.name, secretaryData:ev.target.result}));
+    };
+    reader.readAsDataURL(file);
+  }
+  function save() {
+    if (!form.title || !form.date) return;
+    setMinutes(p => [{ ...form, id:Date.now() }, ...p]);
+    setForm(emptyForm);
+    setMinuteModal(null);
+  }
+
+  const filtered = minuteFilter === "전체" ? minutes : minutes.filter(m => m.dept === minuteFilter);
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
+        <div style={S.sectionTitle}>📋 회의록</div>
+        <button style={S.btn()} onClick={()=>setMinuteModal("add")}>+ 새 회의록</button>
+      </div>
+      <div style={{ display:"flex", gap:8, marginBottom:18 }}>
+        {["전체",...DEPARTMENTS].map(d=>(
+          <button key={d} style={{ ...S.btn(minuteFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setMinuteFilter(d)}>{d}</button>
+        ))}
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {filtered.map(m => (
+          <div key={m.id} style={{ ...S.card, cursor:"pointer" }} onClick={()=>setMinuteModal(m)}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ width:44, height:44, borderRadius:10, background:DEPT_COLORS[m.dept]+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>📋</div>
+                <div>
+                  <div style={{ fontWeight:900, fontSize:15 }}>{m.title}</div>
+                  <div style={{ fontSize:12, color:"#94A3B8", marginTop:2 }}>{m.date} · {m.author} · <span style={{ color:DEPT_COLORS[m.dept], fontWeight:700 }}>{m.dept}</span></div>
+                  <div style={{ fontSize:12, color:"#718096", marginTop:3 }}>{m.summary}</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                {m.pdfName && <span style={{ ...S.tag("#8B5CF6"), fontSize:11 }}>📄 PDF</span>}
+                {m.secretaryName && <span style={{ ...S.tag("#F59E0B"), fontSize:11 }}>📝 서기록</span>}
+                {!m.pdfName && !m.secretaryName && <span style={{ fontSize:12, color:"#CBD5E0" }}>파일 없음</span>}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* View Modal */}
+      {minuteModal && typeof minuteModal === "object" && (
+        <div style={S.overlay} onClick={()=>setMinuteModal(null)}>
+          <div style={S.modal(600)} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+              <span style={S.tag(DEPT_COLORS[minuteModal.dept])}>{minuteModal.dept}</span>
+              <button style={S.btn("ghost")} onClick={()=>setMinuteModal(null)}>✕</button>
+            </div>
+            <div style={{ fontSize:20, fontWeight:900, marginBottom:6 }}>{minuteModal.title}</div>
+            <div style={{ fontSize:13, color:"#94A3B8", marginBottom:16 }}>{minuteModal.date} · 작성자: {minuteModal.author}</div>
+            <div style={{ padding:14, background:BRAND_LIGHT, borderRadius:10, fontSize:13, color:"#4A5568", marginBottom:22 }}>{minuteModal.summary}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+              <div style={{ padding:18, borderRadius:12, border:"2px dashed #CBD5E0", textAlign:"center" }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>📄</div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#4A5568", marginBottom:4 }}>회의록 (PDF)</div>
+                {minuteModal.pdfName && <div style={{ fontSize:11, color:"#94A3B8", marginBottom:10 }}>{minuteModal.pdfName}</div>}
+                {minuteModal.pdfData
+                  ? <a href={minuteModal.pdfData} download={minuteModal.pdfName}><button style={S.btn()}>다운로드</button></a>
+                  : <div style={{ fontSize:12, color:"#CBD5E0" }}>파일 없음</div>}
+              </div>
+              <div style={{ padding:18, borderRadius:12, border:"2px dashed #CBD5E0", textAlign:"center" }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>📝</div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#4A5568", marginBottom:4 }}>서기록</div>
+                {minuteModal.secretaryName && <div style={{ fontSize:11, color:"#94A3B8", marginBottom:10 }}>{minuteModal.secretaryName}</div>}
+                {minuteModal.secretaryData
+                  ? <a href={minuteModal.secretaryData} download={minuteModal.secretaryName}><button style={S.btn()}>다운로드</button></a>
+                  : <div style={{ fontSize:12, color:"#CBD5E0" }}>파일 없음</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Modal */}
+      {minuteModal === "add" && (
+        <div style={S.overlay}>
+          <div style={S.modal(560)}>
+            <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>새 회의록 등록</div>
+            <div style={S.grid2}>
+              <div><label style={S.label}>제목</label><input style={S.input} value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} /></div>
+              <div><label style={S.label}>날짜</label><input style={S.input} type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))} /></div>
+            </div>
+            <div style={{ ...S.grid2, marginTop:12 }}>
+              <div><label style={S.label}>부서</label><select style={S.input} value={form.dept} onChange={e=>setForm(p=>({...p,dept:e.target.value}))}>{DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></div>
+              <div><label style={S.label}>작성자</label><input style={S.input} value={form.author} onChange={e=>setForm(p=>({...p,author:e.target.value}))} /></div>
+            </div>
+            <div style={{ marginTop:12 }}><label style={S.label}>요약</label><input style={S.input} value={form.summary} onChange={e=>setForm(p=>({...p,summary:e.target.value}))} /></div>
+            <div style={{ ...S.grid2, marginTop:16 }}>
+              <div>
+                <label style={S.label}>회의록 PDF 업로드</label>
+                <div style={{ padding:16, border:"2px dashed #CBD5E0", borderRadius:10, textAlign:"center", cursor:"pointer", background:"#FAFBFC" }} onClick={()=>pdfRef.current?.click()}>
+                  <div style={{ fontSize:24 }}>📄</div>
+                  <div style={{ fontSize:12, color:form.pdfName?"#4A5568":"#94A3B8", marginTop:4, fontWeight:form.pdfName?700:400 }}>{form.pdfName || "클릭하여 업로드"}</div>
+                  <input ref={pdfRef} type="file" accept=".pdf,.doc,.docx" style={{ display:"none" }} onChange={e=>handleFile(e,"pdf")} />
+                </div>
+              </div>
+              <div>
+                <label style={S.label}>서기록 업로드</label>
+                <div style={{ padding:16, border:"2px dashed #CBD5E0", borderRadius:10, textAlign:"center", cursor:"pointer", background:"#FAFBFC" }} onClick={()=>secRef.current?.click()}>
+                  <div style={{ fontSize:24 }}>📝</div>
+                  <div style={{ fontSize:12, color:form.secretaryName?"#4A5568":"#94A3B8", marginTop:4, fontWeight:form.secretaryName?700:400 }}>{form.secretaryName || "클릭하여 업로드"}</div>
+                  <input ref={secRef} type="file" accept=".pdf,.doc,.docx,.hwp" style={{ display:"none" }} onChange={e=>handleFile(e,"sec")} />
+                </div>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:22 }}>
+              <button style={S.btn("secondary")} onClick={()=>setMinuteModal(null)}>취소</button>
+              <button style={S.btn()} onClick={save}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   LOGS TAB
+════════════════════════════════════════ */
+function LogsTab({ members, logs, setLogs, logModal, setLogModal, logFilter, setLogFilter }) {
+  const emptyForm = { date:"", dept:"기획부", memberId:"", member:"", task:"", status:"예정" };
+  const [form, setForm] = useState(emptyForm);
+  const deptMembers = members.filter(m => m.dept === form.dept);
+
+  function save() {
+    if (!form.task || !form.date) return;
+    setLogs(p => [{ ...form, id:Date.now() }, ...p]);
+    setForm(emptyForm);
+    setLogModal(null);
+  }
+
+  const filtered = logFilter === "전체" ? logs : logs.filter(l => l.dept === logFilter);
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
+        <div style={S.sectionTitle}>📝 업무 일지</div>
+        <button style={S.btn()} onClick={()=>setLogModal("add")}>+ 업무 추가</button>
+      </div>
+      <div style={{ display:"flex", gap:8, marginBottom:18 }}>
+        {["전체",...DEPARTMENTS].map(d=>(
+          <button key={d} style={{ ...S.btn(logFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setLogFilter(d)}>{d}</button>
+        ))}
+      </div>
+      <div style={S.card}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead><tr style={{ borderBottom:"2px solid #EDF2F7" }}>
+            {["날짜","부서","담당자","업무 내용","상태"].map(h=>(
+              <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:11, color:"#94A3B8", fontWeight:700, textTransform:"uppercase", letterSpacing:".5px" }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {filtered.map(l=>(
+              <tr key={l.id} style={{ borderBottom:"1px solid #F8FAFC" }}>
+                <td style={{ padding:"11px 12px", fontSize:13, color:"#94A3B8" }}>{l.date}</td>
+                <td style={{ padding:"11px 12px" }}><span style={S.tag(DEPT_COLORS[l.dept])}>{l.dept}</span></td>
+                <td style={{ padding:"11px 12px", fontWeight:700, fontSize:13 }}>{l.member}</td>
+                <td style={{ padding:"11px 12px", fontSize:13 }}>{l.task}</td>
+                <td style={{ padding:"11px 12px" }}><span style={S.tag(STATUS_COLOR[l.status])}>{l.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {logModal==="add" && (
+        <div style={S.overlay}>
+          <div style={S.modal()}>
+            <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>업무 추가</div>
+            <div style={{ ...S.grid2, marginBottom:12 }}>
+              <div><label style={S.label}>날짜</label><input style={S.input} type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))} /></div>
+              <div><label style={S.label}>부서</label>
+                <select style={S.input} value={form.dept} onChange={e=>setForm(p=>({...p,dept:e.target.value,memberId:"",member:""}))}>
+                  {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom:12 }}><label style={S.label}>담당자</label>
+              <select style={S.input} value={form.memberId} onChange={e=>{ const m=members.find(m=>m.id===Number(e.target.value)); setForm(p=>({...p,memberId:Number(e.target.value),member:m?.name||""})); }}>
+                <option value="">선택</option>
+                {deptMembers.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom:12 }}><label style={S.label}>업무 내용</label><input style={S.input} value={form.task} onChange={e=>setForm(p=>({...p,task:e.target.value}))} /></div>
+            <div style={{ marginBottom:22 }}><label style={S.label}>상태</label>
+              <select style={S.input} value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>
+                {["예정","진행중","완료"].map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+              <button style={S.btn("secondary")} onClick={()=>setLogModal(null)}>취소</button>
+              <button style={S.btn()} onClick={save}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   CALENDAR TAB
+════════════════════════════════════════ */
+function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, calMonth, setCalMonth, calMode, setCalMode, calDept, setCalDept, calMemberId, setCalMemberId, selectedDay, setSelectedDay, eventModal, setEventModal }) {
+  const td = todayObj();
+  const days = daysInMonth(calYear, calMonth);
+  const startDay = firstDay(calYear, calMonth);
+  const emptyEForm = { title:"", date:"", dept:"기획부", memberId:null, memberName:"전체", type:"전체" };
+  const [eForm, setEForm] = useState(emptyEForm);
+  const eDeptMembers = members.filter(m => m.dept === eForm.dept);
+  const calMember = calMemberId ? members.find(m => m.id === calMemberId) : null;
+  const membersOfDept = (dept) => members.filter(m => m.dept === dept);
+
+  function getCalendarEvents() {
+    if (calMode === "전체") return events;
+    if (calMode === "부서") return events.filter(e => e.dept === calDept);
+    if (calMode === "개인") return calMemberId ? events.filter(e => e.memberId === calMemberId) : [];
+    return events;
+  }
+  function getEventsForDay(d) {
+    const ds = `${calYear}-${pad(calMonth+1)}-${pad(d)}`;
+    return getCalendarEvents().filter(e => e.date === ds);
+  }
+  const dayEvts = selectedDay ? getEventsForDay(selectedDay) : [];
+
+  function saveEvent() {
+    if (!eForm.title || !eForm.date) return;
+    setEvents(p=>[...p,{ ...eForm, id:Date.now(), color:DEPT_COLORS[eForm.dept] }]);
+    setEForm(emptyEForm);
+    setEventModal(null);
+  }
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
+        <div style={S.sectionTitle}>📅 캘린더</div>
+        <button style={S.btn()} onClick={()=>setEventModal("add")}>+ 일정 추가</button>
+      </div>
+
+      {/* Mode Control */}
+      <div style={{ ...S.card, padding:16, marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", gap:6 }}>
+            {["전체","부서","개인"].map(m=>(
+              <button key={m} style={{ ...S.btn(calMode===m?"primary":"secondary"), padding:"6px 14px" }}
+                onClick={()=>{ setCalMode(m); setSelectedDay(null); }}>{m} 캘린더</button>
+            ))}
+          </div>
+          {calMode==="부서" && (
+            <div style={{ display:"flex", gap:6 }}>
+              {DEPARTMENTS.map(d=>(
+                <button key={d} style={{ padding:"5px 12px", borderRadius:7, border:`1.5px solid ${DEPT_COLORS[d]}`, background:calDept===d?DEPT_COLORS[d]:DEPT_COLORS[d]+"15", color:calDept===d?"#fff":DEPT_COLORS[d], fontWeight:700, cursor:"pointer", fontSize:12 }}
+                  onClick={()=>{ setCalDept(d); setSelectedDay(null); }}>{d}</button>
+              ))}
+            </div>
+          )}
+          {calMode==="개인" && (
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              <select style={{ ...S.input, width:"auto", padding:"6px 10px" }} value={calDept}
+                onChange={e=>{ setCalDept(e.target.value); setCalMemberId(null); }}>
+                {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
+              </select>
+              <select style={{ ...S.input, width:"auto", padding:"6px 10px" }} value={calMemberId||""}
+                onChange={e=>setCalMemberId(Number(e.target.value)||null)}>
+                <option value="">부원 선택</option>
+                {membersOfDept(calDept).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+        {calMode==="개인" && calMember && (
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:12, padding:"10px 14px", background:DEPT_COLORS[calMember.dept]+"10", borderRadius:10, border:`1px solid ${DEPT_COLORS[calMember.dept]}30` }}>
+            <div style={{ width:34, height:34, borderRadius:9, background:DEPT_COLORS[calMember.dept]+"25", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:16, color:DEPT_COLORS[calMember.dept] }}>{calMember.name[0]}</div>
+            <div>
+              <div style={{ fontWeight:900, fontSize:14 }}>{calMember.name}</div>
+              <div style={{ fontSize:11, color:"#94A3B8" }}>{calMember.dept} · {calMember.role} · {calMember.studentId}</div>
+            </div>
+            <div style={{ marginLeft:"auto", display:"flex", gap:14 }}>
+              <div style={{ textAlign:"center" }}><div style={{ fontWeight:900, fontSize:16, color:DEPT_COLORS[calMember.dept] }}>{events.filter(e=>e.memberId===calMember.id).length}</div><div style={{ fontSize:10, color:"#94A3B8" }}>총 일정</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ fontWeight:900, fontSize:16, color:"#38C9A0" }}>{logs.filter(l=>l.memberId===calMember.id&&l.status==="완료").length}</div><div style={{ fontSize:10, color:"#94A3B8" }}>완료</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ fontWeight:900, fontSize:16, color:"#F59E0B" }}>{logs.filter(l=>l.memberId===calMember.id&&l.status==="진행중").length}</div><div style={{ fontSize:10, color:"#94A3B8" }}>진행중</div></div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:16 }}>
+        {/* Calendar grid */}
+        <div style={S.card}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+            <button style={S.btn("ghost")} onClick={()=>{ if(calMonth===0){setCalMonth(11);setCalYear(y=>y-1);}else setCalMonth(m=>m-1); setSelectedDay(null); }}>◀</button>
+            <div style={{ fontWeight:900, fontSize:18 }}>{calYear}년 {MONTHS[calMonth]}</div>
+            <button style={S.btn("ghost")} onClick={()=>{ if(calMonth===11){setCalMonth(0);setCalYear(y=>y+1);}else setCalMonth(m=>m+1); setSelectedDay(null); }}>▶</button>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:6 }}>
+            {["일","월","화","수","목","금","토"].map((d,i)=>(
+              <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:800, color:i===0?"#FF6B6B":i===6?BRAND:"#94A3B8", padding:"4px 0" }}>{d}</div>
+            ))}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+            {Array(startDay).fill(null).map((_,i)=><div key={"e"+i} />)}
+            {Array(days).fill(null).map((_,i)=>{
+              const d=i+1; const evts=getEventsForDay(d);
+              const isToday=td.y===calYear&&td.m===calMonth&&td.d===d;
+              const isSel=selectedDay===d;
+              return (
+                <div key={d} onClick={()=>setSelectedDay(isSel?null:d)}
+                  style={{ minHeight:72, padding:"4px 3px", borderRadius:8, background:isSel?BRAND_LIGHT:isToday?"#EFF6FF":"#F8FAFC", border:isSel?`2px solid ${BRAND}`:isToday?`1.5px solid ${BRAND}70`:"1.5px solid transparent", cursor:"pointer" }}>
+                  <div style={{ fontSize:12, fontWeight:isToday?900:500, color:isToday?BRAND:"#2D3748", marginBottom:2, paddingLeft:2 }}>{d}</div>
+                  {evts.slice(0,2).map(e=>(
+                    <div key={e.id} style={{ fontSize:10, background:e.color, color:"#fff", borderRadius:3, padding:"1px 4px", marginBottom:2, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{e.title}</div>
+                  ))}
+                  {evts.length>2&&<div style={{ fontSize:9, color:"#94A3B8", paddingLeft:2 }}>+{evts.length-2}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          <div style={S.card}>
+            <div style={{ fontWeight:900, fontSize:14, marginBottom:12, color:BRAND }}>
+              {selectedDay ? `${calMonth+1}월 ${selectedDay}일 일정` : "날짜를 선택하세요"}
+            </div>
+            {selectedDay && dayEvts.length===0 && <div style={{ fontSize:12, color:"#94A3B8", padding:"8px 0" }}>일정 없음</div>}
+            {dayEvts.map(e=>(
+              <div key={e.id} style={{ padding:12, borderRadius:9, background:e.color+"12", border:`1px solid ${e.color}30`, marginBottom:8 }}>
+                <div style={{ fontWeight:800, fontSize:14 }}>{e.title}</div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
+                  <span style={S.tag(e.color)}>{e.dept}</span>
+                  <span style={{ fontSize:11, color:"#94A3B8" }}>{e.memberName}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={S.card}>
+            <div style={{ fontWeight:700, fontSize:12, marginBottom:10, color:"#94A3B8", textTransform:"uppercase", letterSpacing:".5px" }}>부서 색상</div>
+            {DEPARTMENTS.map(d=>(
+              <div key={d} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7 }}>
+                <div style={{ width:10, height:10, borderRadius:"50%", background:DEPT_COLORS[d] }} />
+                <span style={{ fontSize:13 }}>{d}</span>
+                <span style={{ marginLeft:"auto", fontSize:11, color:"#94A3B8" }}>{events.filter(e=>e.dept===d).length}건</span>
+              </div>
+            ))}
+          </div>
+          {calMode==="부서" && (
+            <div style={S.card}>
+              <div style={{ fontWeight:700, fontSize:12, marginBottom:12, color:"#94A3B8", textTransform:"uppercase", letterSpacing:".5px" }}>{calDept} 부원 업무</div>
+              {membersOfDept(calDept).map(m=>{
+                const mLogs = logs.filter(l=>l.memberId===m.id);
+                const c = DEPT_COLORS[m.dept];
+                return (
+                  <div key={m.id} style={{ padding:"10px 0", borderBottom:"1px solid #F0F5FF" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                      <div style={{ width:26, height:26, borderRadius:7, background:c+"25", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:c }}>{m.name[0]}</div>
+                      <span style={{ fontWeight:800, fontSize:13 }}>{m.name}</span>
+                      <span style={{ marginLeft:"auto", fontSize:11, color:c, fontWeight:700 }}>{mLogs.length}건</span>
+                    </div>
+                    {mLogs.slice(0,3).map(l=>(
+                      <div key={l.id} style={{ display:"flex", alignItems:"center", gap:6, marginLeft:34, marginBottom:4 }}>
+                        <div style={{ width:5, height:5, borderRadius:"50%", background:STATUS_COLOR[l.status], flexShrink:0 }} />
+                        <span style={{ fontSize:11, color:"#718096", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.task}</span>
+                        <span style={{ ...S.tag(STATUS_COLOR[l.status]), fontSize:9, padding:"1px 6px" }}>{l.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {calMode==="개인" && calMember && (
+            <div style={S.card}>
+              <div style={{ fontWeight:700, fontSize:12, marginBottom:12, color:"#94A3B8", textTransform:"uppercase", letterSpacing:".5px" }}>{calMember.name}의 업무</div>
+              {logs.filter(l=>l.memberId===calMember.id).length===0
+                ? <div style={{ fontSize:12, color:"#94A3B8" }}>업무 없음</div>
+                : logs.filter(l=>l.memberId===calMember.id).map(l=>(
+                  <div key={l.id} style={{ padding:"8px 0", borderBottom:"1px solid #F0F5FF" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={S.tag(STATUS_COLOR[l.status])}>{l.status}</span>
+                      <span style={{ fontSize:12, flex:1 }}>{l.task}</span>
+                    </div>
+                    <div style={{ fontSize:11, color:"#94A3B8", marginTop:3 }}>{l.date}</div>
+                  </div>
+                ))
+              }
+            </div>
+          )}
+        </div>
+      </div>
+
+      {eventModal==="add" && (
+        <div style={S.overlay}>
+          <div style={S.modal()}>
+            <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>일정 추가</div>
+            <div style={S.grid2}>
+              <div><label style={S.label}>제목</label><input style={S.input} value={eForm.title} onChange={e=>setEForm(p=>({...p,title:e.target.value}))} /></div>
+              <div><label style={S.label}>날짜</label><input style={S.input} type="date" value={eForm.date} onChange={e=>setEForm(p=>({...p,date:e.target.value}))} /></div>
+            </div>
+            <div style={{ ...S.grid2, marginTop:12 }}>
+              <div><label style={S.label}>부서</label>
+                <select style={S.input} value={eForm.dept} onChange={e=>setEForm(p=>({...p,dept:e.target.value,memberId:null,memberName:"전체"}))}>
+                  {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
+                </select>
+              </div>
+              <div><label style={S.label}>일정 유형</label>
+                <select style={S.input} value={eForm.type} onChange={e=>{ const t=e.target.value; setEForm(p=>({...p,type:t,memberId:null,memberName:t==="부서"?p.dept:t==="개인"?"":"전체"})); }}>
+                  {["전체","부서","개인"].map(t=><option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            {eForm.type==="개인" && (
+              <div style={{ marginTop:12 }}><label style={S.label}>담당자</label>
+                <select style={S.input} value={eForm.memberId||""} onChange={e=>{ const m=members.find(m=>m.id===Number(e.target.value)); setEForm(p=>({...p,memberId:Number(e.target.value)||null,memberName:m?.name||""})); }}>
+                  <option value="">선택</option>
+                  {eDeptMembers.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
+            )}
+            <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:22 }}>
+              <button style={S.btn("secondary")} onClick={()=>setEventModal(null)}>취소</button>
+              <button style={S.btn()} onClick={saveEvent}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   APP (최상위 — 상태만 관리)
+════════════════════════════════════════ */
 export default function App() {
   const [tab, setTab] = useState("home");
   const [members, setMembers] = useState(seedMembers);
@@ -71,7 +722,6 @@ export default function App() {
   const [logs, setLogs] = useState(seedLogs);
   const [events, setEvents] = useState(seedEvents);
 
-  const td = todayObj();
   const [calYear, setCalYear] = useState(2025);
   const [calMonth, setCalMonth] = useState(2);
   const [calMode, setCalMode] = useState("전체");
@@ -86,19 +736,6 @@ export default function App() {
   const [minuteFilter, setMinuteFilter] = useState("전체");
   const [logFilter, setLogFilter] = useState("전체");
 
-  const membersOfDept = (dept) => members.filter(m => m.dept === dept);
-
-  function getCalendarEvents() {
-    if (calMode === "전체") return events;
-    if (calMode === "부서") return events.filter(e => e.dept === calDept);
-    if (calMode === "개인") return calMemberId ? events.filter(e => e.memberId === calMemberId) : [];
-    return events;
-  }
-  function getEventsForDay(d) {
-    const ds = `${calYear}-${pad(calMonth+1)}-${pad(d)}`;
-    return getCalendarEvents().filter(e => e.date === ds);
-  }
-
   const TABS = [
     { id:"home", label:"홈", icon:"⬡" },
     { id:"members", label:"부원 관리", icon:"👥" },
@@ -106,608 +743,6 @@ export default function App() {
     { id:"logs", label:"업무 일지", icon:"📝" },
     { id:"calendar", label:"캘린더", icon:"📅" },
   ];
-
-  /* ════ HOME ════ */
-  function HomeTab() {
-    const eventsThisMonth = events.filter(e => { const [ey,em] = e.date.split("-").map(Number); return ey===calYear && em===calMonth+1; });
-    return (
-      <div>
-        <div style={{ marginBottom:24 }}>
-          <div style={{ fontSize:11, color:"#94A3B8", fontWeight:700, letterSpacing:1.5, marginBottom:6 }}>HONGIK UNIV · MATH EDUCATION</div>
-          <div style={{ fontSize:26, fontWeight:900 }}>제 39대 학생회 <span style={{ color:BRAND }}>이상</span></div>
-          <div style={{ fontSize:13, color:"#94A3B8", marginTop:3 }}>2025년 워크스페이스</div>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:22 }}>
-          {[
-            { label:"총 부원", value:members.length, icon:"👥", c:"#4A8CFF" },
-            { label:"회의록", value:minutes.length, icon:"📋", c:"#8B5CF6" },
-            { label:"업무 일지", value:logs.length, icon:"📝", c:"#FF6B6B" },
-            { label:"이달 일정", value:eventsThisMonth.length, icon:"📅", c:"#38C9A0" },
-            { label:"완료 업무", value:logs.filter(l=>l.status==="완료").length, icon:"✅", c:"#F59E0B" },
-          ].map(s => (
-            <div key={s.label} style={{ ...S.card, textAlign:"center", padding:18 }}>
-              <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
-              <div style={{ fontSize:24, fontWeight:900, color:s.c }}>{s.value}</div>
-              <div style={{ fontSize:11, color:"#94A3B8", fontWeight:600, marginTop:2 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:16, marginBottom:16 }}>
-          <div style={S.card}>
-            <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>부서 현황</div>
-            {DEPARTMENTS.map(dept => {
-              const c = DEPT_COLORS[dept];
-              const dm = membersOfDept(dept);
-              const dl = logs.filter(l => l.dept === dept);
-              const pct = dl.length ? (dl.filter(l=>l.status==="완료").length / dl.length) * 100 : 0;
-              return (
-                <div key={dept} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:"1px solid #F7F9FC" }}>
-                  <div style={{ width:8, height:8, borderRadius:"50%", background:c, flexShrink:0 }} />
-                  <div style={{ fontWeight:700, width:56, fontSize:14 }}>{dept}</div>
-                  <div style={{ flex:1, height:5, background:"#EDF2F7", borderRadius:3 }}>
-                    <div style={{ height:"100%", borderRadius:3, background:c, width:`${pct}%`, transition:"width .3s" }} />
-                  </div>
-                  <div style={{ fontSize:11, color:"#94A3B8", width:68, textAlign:"right" }}>{dm.length}명 · {dl.length}건</div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={S.card}>
-            <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>다가오는 일정</div>
-            {events.filter(e=>e.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5).map(e => (
-              <div key={e.id} style={{ display:"flex", gap:10, alignItems:"center", padding:"8px 0", borderBottom:"1px solid #F7F9FC" }}>
-                <div style={{ width:7, height:7, borderRadius:"50%", background:e.color, flexShrink:0 }} />
-                <div style={{ flex:1, fontSize:13, fontWeight:600 }}>{e.title}</div>
-                <div style={{ fontSize:11, color:"#94A3B8" }}>{e.date.slice(5)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={S.card}>
-          <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>최근 회의록</div>
-          <div style={{ display:"flex", gap:12 }}>
-            {minutes.slice(0,3).map(m => (
-              <div key={m.id} onClick={() => { setMinuteModal(m); setTab("minutes"); }}
-                style={{ flex:1, padding:14, borderRadius:10, background:"#F8FAFC", border:"1px solid #EDF2F7", cursor:"pointer" }}>
-                <span style={S.tag(DEPT_COLORS[m.dept])}>{m.dept}</span>
-                <div style={{ fontWeight:800, marginTop:8, marginBottom:3, fontSize:14 }}>{m.title}</div>
-                <div style={{ fontSize:11, color:"#94A3B8" }}>{m.date}</div>
-                <div style={{ fontSize:12, color:"#718096", marginTop:4 }}>{m.summary}</div>
-                <div style={{ display:"flex", gap:6, marginTop:8 }}>
-                  {m.pdfName && <span style={{ ...S.tag("#8B5CF6"), fontSize:10 }}>📄 PDF</span>}
-                  {m.secretaryName && <span style={{ ...S.tag("#F59E0B"), fontSize:10 }}>📝 서기록</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ════ MEMBERS ════ */
-  function MembersTab() {
-    const [deptFilter, setDeptFilter] = useState("전체");
-    const [editMember, setEditMember] = useState(null);
-    const emptyForm = { name:"", dept:"기획부", role:"부원", studentId:"", phone:"", email:"", joinYear:2025 };
-    const [form, setForm] = useState(emptyForm);
-
-    const filtered = deptFilter === "전체" ? members : members.filter(m => m.dept === deptFilter);
-
-    function saveNew() {
-      if (!form.name || !form.studentId) return;
-      setMembers(p => [...p, { ...form, id: Date.now() }]);
-      setForm(emptyForm);
-      setMemberModal(null);
-    }
-    function saveEdit() {
-      setMembers(p => p.map(m => m.id === editMember.id ? editMember : m));
-      setEditMember(null); setMemberModal(null);
-    }
-    function del(id) { setMembers(p => p.filter(m => m.id !== id)); setEditMember(null); setMemberModal(null); }
-
-    function MemberForm({ data, setData, onSave, onClose, isEdit }) {
-      return (
-        <div style={S.overlay}>
-          <div style={S.modal()}>
-            <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>{isEdit ? "부원 정보 수정" : "새 부원 등록"}</div>
-            <div style={S.grid2}>
-              <div><label style={S.label}>이름</label><input style={S.input} value={data.name} onChange={e=>setData(p=>({...p,name:e.target.value}))} /></div>
-              <div><label style={S.label}>학번</label><input style={S.input} value={data.studentId} onChange={e=>setData(p=>({...p,studentId:e.target.value}))} /></div>
-            </div>
-            <div style={{ ...S.grid2, marginTop:12 }}>
-              <div><label style={S.label}>부서</label>
-                <select style={S.input} value={data.dept} onChange={e=>setData(p=>({...p,dept:e.target.value}))}>
-                  {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
-                </select>
-              </div>
-              <div><label style={S.label}>직책</label>
-                <select style={S.input} value={data.role} onChange={e=>setData(p=>({...p,role:e.target.value}))}>
-                  {ROLES.map(r=><option key={r}>{r}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{ marginTop:12 }}><label style={S.label}>전화번호</label><input style={S.input} value={data.phone} onChange={e=>setData(p=>({...p,phone:e.target.value}))} placeholder="010-0000-0000" /></div>
-            <div style={{ marginTop:12 }}><label style={S.label}>이메일</label><input style={S.input} value={data.email} onChange={e=>setData(p=>({...p,email:e.target.value}))} placeholder="example@hongik.ac.kr" /></div>
-            <div style={{ marginTop:12, marginBottom:22 }}><label style={S.label}>가입 연도</label>
-              <input style={S.input} type="number" value={data.joinYear} onChange={e=>setData(p=>({...p,joinYear:Number(e.target.value)}))} />
-            </div>
-            <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
-              <button style={S.btn("secondary")} onClick={onClose}>취소</button>
-              {isEdit && <button style={S.btn("danger")} onClick={()=>del(data.id)}>삭제</button>}
-              <button style={S.btn()} onClick={onSave}>저장</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
-          <div style={S.sectionTitle}>👥 부원 관리</div>
-          <button style={S.btn()} onClick={()=>setMemberModal("add")}>+ 부원 등록</button>
-        </div>
-        <div style={{ display:"flex", gap:8, marginBottom:18 }}>
-          {["전체",...DEPARTMENTS].map(d=>(
-            <button key={d} style={{ ...S.btn(deptFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setDeptFilter(d)}>{d}</button>
-          ))}
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
-          {filtered.map(m => {
-            const c = DEPT_COLORS[m.dept];
-            const mLogs = logs.filter(l=>l.memberId===m.id);
-            return (
-              <div key={m.id} style={{ ...S.card, cursor:"pointer", padding:18, transition:"box-shadow .15s" }}
-                onClick={()=>{ setEditMember({...m}); setMemberModal("edit"); }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-                  <div style={{ width:42, height:42, borderRadius:12, background:c+"20", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:c }}>{m.name[0]}</div>
-                  <div>
-                    <div style={{ fontWeight:900, fontSize:15 }}>{m.name}</div>
-                    <div style={{ fontSize:11, color:"#94A3B8" }}>{m.studentId}</div>
-                  </div>
-                </div>
-                <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-                  <span style={S.tag(c)}>{m.dept}</span>
-                  <span style={S.tag("#8B5CF6")}>{m.role}</span>
-                </div>
-                <div style={{ fontSize:12, color:"#718096" }}>{m.phone}</div>
-                <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{m.email}</div>
-                <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #F0F5FF", display:"flex", justifyContent:"space-between" }}>
-                  <span style={{ fontSize:11, color:"#94A3B8" }}>업무 {mLogs.length}건</span>
-                  <span style={{ fontSize:11, color:"#38C9A0", fontWeight:700 }}>완료 {mLogs.filter(l=>l.status==="완료").length}건</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {memberModal==="add" && <MemberForm data={form} setData={setForm} onSave={saveNew} onClose={()=>setMemberModal(null)} />}
-        {memberModal==="edit" && editMember && <MemberForm data={editMember} setData={setEditMember} onSave={saveEdit} onClose={()=>{ setMemberModal(null); setEditMember(null); }} isEdit />}
-      </div>
-    );
-  }
-
-  /* ════ MINUTES ════ */
-  function MinutesTab() {
-    const pdfRef = useRef(); const secRef = useRef();
-    const emptyForm = { title:"", date:"", dept:"기획부", author:"", summary:"", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null };
-    const [form, setForm] = useState(emptyForm);
-
-    function handleFile(e, type) {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        if (type === "pdf") setForm(p=>({...p, pdfName:file.name, pdfData:ev.target.result}));
-        else setForm(p=>({...p, secretaryName:file.name, secretaryData:ev.target.result}));
-      };
-      reader.readAsDataURL(file);
-    }
-    function save() {
-      if (!form.title || !form.date) return;
-      setMinutes(p => [{ ...form, id:Date.now() }, ...p]);
-      setForm(emptyForm);
-      setMinuteModal(null);
-    }
-
-    const filtered = minuteFilter === "전체" ? minutes : minutes.filter(m => m.dept === minuteFilter);
-
-    return (
-      <div>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
-          <div style={S.sectionTitle}>📋 회의록</div>
-          <button style={S.btn()} onClick={()=>setMinuteModal("add")}>+ 새 회의록</button>
-        </div>
-        <div style={{ display:"flex", gap:8, marginBottom:18 }}>
-          {["전체",...DEPARTMENTS].map(d=>(
-            <button key={d} style={{ ...S.btn(minuteFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setMinuteFilter(d)}>{d}</button>
-          ))}
-        </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {filtered.map(m => (
-            <div key={m.id} style={{ ...S.card, cursor:"pointer" }} onClick={()=>setMinuteModal(m)}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <div style={{ width:44, height:44, borderRadius:10, background:DEPT_COLORS[m.dept]+"15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>📋</div>
-                  <div>
-                    <div style={{ fontWeight:900, fontSize:15 }}>{m.title}</div>
-                    <div style={{ fontSize:12, color:"#94A3B8", marginTop:2 }}>{m.date} · {m.author} · <span style={{ color:DEPT_COLORS[m.dept], fontWeight:700 }}>{m.dept}</span></div>
-                    <div style={{ fontSize:12, color:"#718096", marginTop:3 }}>{m.summary}</div>
-                  </div>
-                </div>
-                <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-                  {m.pdfName && <span style={{ ...S.tag("#8B5CF6"), fontSize:11 }}>📄 PDF</span>}
-                  {m.secretaryName && <span style={{ ...S.tag("#F59E0B"), fontSize:11 }}>📝 서기록</span>}
-                  {!m.pdfName && !m.secretaryName && <span style={{ fontSize:12, color:"#CBD5E0" }}>파일 없음</span>}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* View Modal */}
-        {minuteModal && typeof minuteModal === "object" && (
-          <div style={S.overlay} onClick={()=>setMinuteModal(null)}>
-            <div style={S.modal(600)} onClick={e=>e.stopPropagation()}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
-                <span style={S.tag(DEPT_COLORS[minuteModal.dept])}>{minuteModal.dept}</span>
-                <button style={S.btn("ghost")} onClick={()=>setMinuteModal(null)}>✕</button>
-              </div>
-              <div style={{ fontSize:20, fontWeight:900, marginBottom:6 }}>{minuteModal.title}</div>
-              <div style={{ fontSize:13, color:"#94A3B8", marginBottom:16 }}>{minuteModal.date} · 작성자: {minuteModal.author}</div>
-              <div style={{ padding:14, background:BRAND_LIGHT, borderRadius:10, fontSize:13, color:"#4A5568", marginBottom:22 }}>{minuteModal.summary}</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-                <div style={{ padding:18, borderRadius:12, border:"2px dashed #CBD5E0", textAlign:"center" }}>
-                  <div style={{ fontSize:32, marginBottom:8 }}>📄</div>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#4A5568", marginBottom:4 }}>회의록 (PDF)</div>
-                  {minuteModal.pdfName && <div style={{ fontSize:11, color:"#94A3B8", marginBottom:10 }}>{minuteModal.pdfName}</div>}
-                  {minuteModal.pdfData
-                    ? <a href={minuteModal.pdfData} download={minuteModal.pdfName}><button style={S.btn()}>다운로드</button></a>
-                    : <div style={{ fontSize:12, color:"#CBD5E0" }}>파일 없음</div>}
-                </div>
-                <div style={{ padding:18, borderRadius:12, border:"2px dashed #CBD5E0", textAlign:"center" }}>
-                  <div style={{ fontSize:32, marginBottom:8 }}>📝</div>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#4A5568", marginBottom:4 }}>서기록</div>
-                  {minuteModal.secretaryName && <div style={{ fontSize:11, color:"#94A3B8", marginBottom:10 }}>{minuteModal.secretaryName}</div>}
-                  {minuteModal.secretaryData
-                    ? <a href={minuteModal.secretaryData} download={minuteModal.secretaryName}><button style={S.btn()}>다운로드</button></a>
-                    : <div style={{ fontSize:12, color:"#CBD5E0" }}>파일 없음</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add Modal */}
-        {minuteModal === "add" && (
-          <div style={S.overlay}>
-            <div style={S.modal(560)}>
-              <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>새 회의록 등록</div>
-              <div style={S.grid2}>
-                <div><label style={S.label}>제목</label><input style={S.input} value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} /></div>
-                <div><label style={S.label}>날짜</label><input style={S.input} type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))} /></div>
-              </div>
-              <div style={{ ...S.grid2, marginTop:12 }}>
-                <div><label style={S.label}>부서</label><select style={S.input} value={form.dept} onChange={e=>setForm(p=>({...p,dept:e.target.value}))}>{DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></div>
-                <div><label style={S.label}>작성자</label><input style={S.input} value={form.author} onChange={e=>setForm(p=>({...p,author:e.target.value}))} /></div>
-              </div>
-              <div style={{ marginTop:12 }}><label style={S.label}>요약</label><input style={S.input} value={form.summary} onChange={e=>setForm(p=>({...p,summary:e.target.value}))} /></div>
-              <div style={{ ...S.grid2, marginTop:16 }}>
-                <div>
-                  <label style={S.label}>회의록 PDF 업로드</label>
-                  <div style={{ padding:16, border:"2px dashed #CBD5E0", borderRadius:10, textAlign:"center", cursor:"pointer", background:"#FAFBFC" }} onClick={()=>pdfRef.current?.click()}>
-                    <div style={{ fontSize:24 }}>📄</div>
-                    <div style={{ fontSize:12, color: form.pdfName?"#4A5568":"#94A3B8", marginTop:4, fontWeight:form.pdfName?700:400 }}>{form.pdfName || "클릭하여 업로드"}</div>
-                    <input ref={pdfRef} type="file" accept=".pdf,.doc,.docx" style={{ display:"none" }} onChange={e=>handleFile(e,"pdf")} />
-                  </div>
-                </div>
-                <div>
-                  <label style={S.label}>서기록 업로드</label>
-                  <div style={{ padding:16, border:"2px dashed #CBD5E0", borderRadius:10, textAlign:"center", cursor:"pointer", background:"#FAFBFC" }} onClick={()=>secRef.current?.click()}>
-                    <div style={{ fontSize:24 }}>📝</div>
-                    <div style={{ fontSize:12, color:form.secretaryName?"#4A5568":"#94A3B8", marginTop:4, fontWeight:form.secretaryName?700:400 }}>{form.secretaryName || "클릭하여 업로드"}</div>
-                    <input ref={secRef} type="file" accept=".pdf,.doc,.docx,.hwp" style={{ display:"none" }} onChange={e=>handleFile(e,"sec")} />
-                  </div>
-                </div>
-              </div>
-              <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:22 }}>
-                <button style={S.btn("secondary")} onClick={()=>setMinuteModal(null)}>취소</button>
-                <button style={S.btn()} onClick={save}>저장</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /* ════ LOGS ════ */
-  function LogsTab() {
-    const emptyForm = { date:"", dept:"기획부", memberId:"", member:"", task:"", status:"예정" };
-    const [form, setForm] = useState(emptyForm);
-    const deptMembers = members.filter(m => m.dept === form.dept);
-    function save() {
-      if (!form.task || !form.date) return;
-      setLogs(p => [{ ...form, id:Date.now() }, ...p]);
-      setForm(emptyForm); setLogModal(null);
-    }
-    const filtered = logFilter === "전체" ? logs : logs.filter(l => l.dept === logFilter);
-
-    return (
-      <div>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
-          <div style={S.sectionTitle}>📝 업무 일지</div>
-          <button style={S.btn()} onClick={()=>setLogModal("add")}>+ 업무 추가</button>
-        </div>
-        <div style={{ display:"flex", gap:8, marginBottom:18 }}>
-          {["전체",...DEPARTMENTS].map(d=>(
-            <button key={d} style={{ ...S.btn(logFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setLogFilter(d)}>{d}</button>
-          ))}
-        </div>
-        <div style={S.card}>
-          <table style={{ width:"100%", borderCollapse:"collapse" }}>
-            <thead><tr style={{ borderBottom:"2px solid #EDF2F7" }}>
-              {["날짜","부서","담당자","업무 내용","상태"].map(h=>(
-                <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:11, color:"#94A3B8", fontWeight:700, textTransform:"uppercase", letterSpacing:".5px" }}>{h}</th>
-              ))}
-            </tr></thead>
-            <tbody>
-              {filtered.map(l=>(
-                <tr key={l.id} style={{ borderBottom:"1px solid #F8FAFC" }}>
-                  <td style={{ padding:"11px 12px", fontSize:13, color:"#94A3B8" }}>{l.date}</td>
-                  <td style={{ padding:"11px 12px" }}><span style={S.tag(DEPT_COLORS[l.dept])}>{l.dept}</span></td>
-                  <td style={{ padding:"11px 12px", fontWeight:700, fontSize:13 }}>{l.member}</td>
-                  <td style={{ padding:"11px 12px", fontSize:13 }}>{l.task}</td>
-                  <td style={{ padding:"11px 12px" }}><span style={S.tag(STATUS_COLOR[l.status])}>{l.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {logModal==="add" && (
-          <div style={S.overlay}>
-            <div style={S.modal()}>
-              <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>업무 추가</div>
-              <div style={{ ...S.grid2, marginBottom:12 }}>
-                <div><label style={S.label}>날짜</label><input style={S.input} type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))} /></div>
-                <div><label style={S.label}>부서</label><select style={S.input} value={form.dept} onChange={e=>setForm(p=>({...p,dept:e.target.value,memberId:"",member:""}))}>
-                  {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></div>
-              </div>
-              <div style={{ marginBottom:12 }}><label style={S.label}>담당자</label>
-                <select style={S.input} value={form.memberId} onChange={e=>{ const m=members.find(m=>m.id===Number(e.target.value)); setForm(p=>({...p,memberId:Number(e.target.value),member:m?.name||""})); }}>
-                  <option value="">선택</option>
-                  {deptMembers.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-              </div>
-              <div style={{ marginBottom:12 }}><label style={S.label}>업무 내용</label><input style={S.input} value={form.task} onChange={e=>setForm(p=>({...p,task:e.target.value}))} /></div>
-              <div style={{ marginBottom:22 }}><label style={S.label}>상태</label><select style={S.input} value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>
-                {["예정","진행중","완료"].map(s=><option key={s}>{s}</option>)}</select></div>
-              <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
-                <button style={S.btn("secondary")} onClick={()=>setLogModal(null)}>취소</button>
-                <button style={S.btn()} onClick={save}>저장</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /* ════ CALENDAR ════ */
-  function CalendarTab() {
-    const days = daysInMonth(calYear, calMonth);
-    const startDay = firstDay(calYear, calMonth);
-    const dayEvts = selectedDay ? getEventsForDay(selectedDay) : [];
-    const emptyEForm = { title:"", date:"", dept:"기획부", memberId:null, memberName:"전체", type:"전체" };
-    const [eForm, setEForm] = useState(emptyEForm);
-    const eDeptMembers = members.filter(m => m.dept === eForm.dept);
-    const calMember = calMemberId ? members.find(m => m.id === calMemberId) : null;
-
-    function saveEvent() {
-      if (!eForm.title || !eForm.date) return;
-      setEvents(p=>[...p,{ ...eForm, id:Date.now(), color:DEPT_COLORS[eForm.dept] }]);
-      setEForm(emptyEForm); setEventModal(null);
-    }
-
-    return (
-      <div>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
-          <div style={S.sectionTitle}>📅 캘린더</div>
-          <button style={S.btn()} onClick={()=>setEventModal("add")}>+ 일정 추가</button>
-        </div>
-
-        {/* Mode Control */}
-        <div style={{ ...S.card, padding:16, marginBottom:16 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
-            <div style={{ display:"flex", gap:6 }}>
-              {["전체","부서","개인"].map(m=>(
-                <button key={m} style={{ ...S.btn(calMode===m?"primary":"secondary"), padding:"6px 14px" }}
-                  onClick={()=>{ setCalMode(m); setSelectedDay(null); }}>{m} 캘린더</button>
-              ))}
-            </div>
-            {calMode==="부서" && (
-              <div style={{ display:"flex", gap:6 }}>
-                {DEPARTMENTS.map(d=>(
-                  <button key={d} style={{ padding:"5px 12px", borderRadius:7, border:`1.5px solid ${DEPT_COLORS[d]}`, background:calDept===d?DEPT_COLORS[d]:DEPT_COLORS[d]+"15", color:calDept===d?"#fff":DEPT_COLORS[d], fontWeight:700, cursor:"pointer", fontSize:12, transition:"all .13s" }}
-                    onClick={()=>{ setCalDept(d); setSelectedDay(null); }}>{d}</button>
-                ))}
-              </div>
-            )}
-            {calMode==="개인" && (
-              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                <select style={{ ...S.input, width:"auto", padding:"6px 10px" }} value={calDept}
-                  onChange={e=>{ setCalDept(e.target.value); setCalMemberId(null); }}>
-                  {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
-                </select>
-                <select style={{ ...S.input, width:"auto", padding:"6px 10px" }} value={calMemberId||""}
-                  onChange={e=>setCalMemberId(Number(e.target.value)||null)}>
-                  <option value="">부원 선택</option>
-                  {membersOfDept(calDept).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-              </div>
-            )}
-          </div>
-          {calMode==="개인" && calMember && (
-            <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:12, padding:"10px 14px", background:DEPT_COLORS[calMember.dept]+"10", borderRadius:10, border:`1px solid ${DEPT_COLORS[calMember.dept]}30` }}>
-              <div style={{ width:34, height:34, borderRadius:9, background:DEPT_COLORS[calMember.dept]+"25", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:16, color:DEPT_COLORS[calMember.dept] }}>{calMember.name[0]}</div>
-              <div>
-                <div style={{ fontWeight:900, fontSize:14 }}>{calMember.name}</div>
-                <div style={{ fontSize:11, color:"#94A3B8" }}>{calMember.dept} · {calMember.role} · {calMember.studentId}</div>
-              </div>
-              <div style={{ marginLeft:"auto", display:"flex", gap:14 }}>
-                <div style={{ textAlign:"center" }}><div style={{ fontWeight:900, fontSize:16, color:DEPT_COLORS[calMember.dept] }}>{events.filter(e=>e.memberId===calMember.id).length}</div><div style={{ fontSize:10, color:"#94A3B8" }}>총 일정</div></div>
-                <div style={{ textAlign:"center" }}><div style={{ fontWeight:900, fontSize:16, color:"#38C9A0" }}>{logs.filter(l=>l.memberId===calMember.id&&l.status==="완료").length}</div><div style={{ fontSize:10, color:"#94A3B8" }}>완료</div></div>
-                <div style={{ textAlign:"center" }}><div style={{ fontWeight:900, fontSize:16, color:"#F59E0B" }}>{logs.filter(l=>l.memberId===calMember.id&&l.status==="진행중").length}</div><div style={{ fontSize:10, color:"#94A3B8" }}>진행중</div></div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:16 }}>
-          {/* Calendar grid */}
-          <div style={S.card}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-              <button style={S.btn("ghost")} onClick={()=>{ if(calMonth===0){setCalMonth(11);setCalYear(y=>y-1);}else setCalMonth(m=>m-1); setSelectedDay(null); }}>◀</button>
-              <div style={{ fontWeight:900, fontSize:18 }}>{calYear}년 {MONTHS[calMonth]}</div>
-              <button style={S.btn("ghost")} onClick={()=>{ if(calMonth===11){setCalMonth(0);setCalYear(y=>y+1);}else setCalMonth(m=>m+1); setSelectedDay(null); }}>▶</button>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:6 }}>
-              {["일","월","화","수","목","금","토"].map((d,i)=>(
-                <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:800, color:i===0?"#FF6B6B":i===6?BRAND:"#94A3B8", padding:"4px 0" }}>{d}</div>
-              ))}
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
-              {Array(startDay).fill(null).map((_,i)=><div key={"e"+i} />)}
-              {Array(days).fill(null).map((_,i)=>{
-                const d=i+1; const evts=getEventsForDay(d);
-                const isToday=td.y===calYear&&td.m===calMonth&&td.d===d;
-                const isSel=selectedDay===d;
-                return (
-                  <div key={d} onClick={()=>setSelectedDay(isSel?null:d)}
-                    style={{ minHeight:72, padding:"4px 3px", borderRadius:8, background:isSel?BRAND_LIGHT:isToday?"#EFF6FF":"#F8FAFC", border:isSel?`2px solid ${BRAND}`:isToday?`1.5px solid ${BRAND}70`:"1.5px solid transparent", cursor:"pointer", transition:"all .1s" }}>
-                    <div style={{ fontSize:12, fontWeight:isToday?900:500, color:isToday?BRAND:"#2D3748", marginBottom:2, paddingLeft:2 }}>{d}</div>
-                    {evts.slice(0,2).map(e=>(
-                      <div key={e.id} style={{ fontSize:10, background:e.color, color:"#fff", borderRadius:3, padding:"1px 4px", marginBottom:2, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{e.title}</div>
-                    ))}
-                    {evts.length>2&&<div style={{ fontSize:9, color:"#94A3B8", paddingLeft:2 }}>+{evts.length-2}</div>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            {/* Day events */}
-            <div style={S.card}>
-              <div style={{ fontWeight:900, fontSize:14, marginBottom:12, color:BRAND }}>
-                {selectedDay ? `${calMonth+1}월 ${selectedDay}일 일정` : "날짜를 선택하세요"}
-              </div>
-              {selectedDay && dayEvts.length===0 && <div style={{ fontSize:12, color:"#94A3B8", padding:"8px 0" }}>일정 없음</div>}
-              {dayEvts.map(e=>(
-                <div key={e.id} style={{ padding:12, borderRadius:9, background:e.color+"12", border:`1px solid ${e.color}30`, marginBottom:8 }}>
-                  <div style={{ fontWeight:800, fontSize:14 }}>{e.title}</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
-                    <span style={S.tag(e.color)}>{e.dept}</span>
-                    <span style={{ fontSize:11, color:"#94A3B8" }}>{e.memberName}</span>
-                    <span style={{ ...S.tag("#94A3B8"), marginLeft:"auto" }}>{e.type}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Dept legend */}
-            <div style={S.card}>
-              <div style={{ fontWeight:700, fontSize:12, marginBottom:10, color:"#94A3B8", textTransform:"uppercase", letterSpacing:".5px" }}>부서 색상</div>
-              {DEPARTMENTS.map(d=>(
-                <div key={d} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7 }}>
-                  <div style={{ width:10, height:10, borderRadius:"50%", background:DEPT_COLORS[d] }} />
-                  <span style={{ fontSize:13 }}>{d}</span>
-                  <span style={{ marginLeft:"auto", fontSize:11, color:"#94A3B8" }}>{events.filter(e=>e.dept===d).length}건</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Dept member tasks (부서 mode) */}
-            {calMode==="부서" && (
-              <div style={S.card}>
-                <div style={{ fontWeight:700, fontSize:12, marginBottom:12, color:"#94A3B8", textTransform:"uppercase", letterSpacing:".5px" }}>{calDept} 부원 업무</div>
-                {membersOfDept(calDept).map(m=>{
-                  const mLogs = logs.filter(l=>l.memberId===m.id);
-                  const c = DEPT_COLORS[m.dept];
-                  return (
-                    <div key={m.id} style={{ padding:"10px 0", borderBottom:"1px solid #F0F5FF" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                        <div style={{ width:26, height:26, borderRadius:7, background:c+"25", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:c }}>{m.name[0]}</div>
-                        <span style={{ fontWeight:800, fontSize:13 }}>{m.name}</span>
-                        <span style={{ marginLeft:"auto", fontSize:11, color:c, fontWeight:700 }}>{mLogs.length}건</span>
-                      </div>
-                      {mLogs.slice(0,3).map(l=>(
-                        <div key={l.id} style={{ display:"flex", alignItems:"center", gap:6, marginLeft:34, marginBottom:4 }}>
-                          <div style={{ width:5, height:5, borderRadius:"50%", background:STATUS_COLOR[l.status], flexShrink:0 }} />
-                          <span style={{ fontSize:11, color:"#718096", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.task}</span>
-                          <span style={{ ...S.tag(STATUS_COLOR[l.status]), fontSize:9, padding:"1px 6px" }}>{l.status}</span>
-                        </div>
-                      ))}
-                      {mLogs.length>3&&<div style={{ fontSize:10, color:"#94A3B8", marginLeft:34, marginTop:2 }}>+{mLogs.length-3}건 더</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Individual member logs (개인 mode) */}
-            {calMode==="개인" && calMember && (
-              <div style={S.card}>
-                <div style={{ fontWeight:700, fontSize:12, marginBottom:12, color:"#94A3B8", textTransform:"uppercase", letterSpacing:".5px" }}>{calMember.name}의 업무</div>
-                {logs.filter(l=>l.memberId===calMember.id).length===0
-                  ? <div style={{ fontSize:12, color:"#94A3B8" }}>업무 없음</div>
-                  : logs.filter(l=>l.memberId===calMember.id).map(l=>(
-                    <div key={l.id} style={{ padding:"8px 0", borderBottom:"1px solid #F0F5FF" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                        <span style={S.tag(STATUS_COLOR[l.status])}>{l.status}</span>
-                        <span style={{ fontSize:12, flex:1 }}>{l.task}</span>
-                      </div>
-                      <div style={{ fontSize:11, color:"#94A3B8", marginTop:3 }}>{l.date}</div>
-                    </div>
-                  ))
-                }
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Add event modal */}
-        {eventModal==="add" && (
-          <div style={S.overlay}>
-            <div style={S.modal()}>
-              <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>일정 추가</div>
-              <div style={S.grid2}>
-                <div><label style={S.label}>제목</label><input style={S.input} value={eForm.title} onChange={e=>setEForm(p=>({...p,title:e.target.value}))} /></div>
-                <div><label style={S.label}>날짜</label><input style={S.input} type="date" value={eForm.date} onChange={e=>setEForm(p=>({...p,date:e.target.value}))} /></div>
-              </div>
-              <div style={{ ...S.grid2, marginTop:12 }}>
-                <div><label style={S.label}>부서</label><select style={S.input} value={eForm.dept} onChange={e=>setEForm(p=>({...p,dept:e.target.value,memberId:null,memberName:"전체"}))}>{DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></div>
-                <div><label style={S.label}>일정 유형</label><select style={S.input} value={eForm.type} onChange={e=>{ const t=e.target.value; setEForm(p=>({...p,type:t,memberId:null,memberName:t==="부서"?p.dept:t==="개인"?"":"전체"})); }}>
-                  {["전체","부서","개인"].map(t=><option key={t}>{t}</option>)}</select></div>
-              </div>
-              {eForm.type==="개인" && (
-                <div style={{ marginTop:12 }}><label style={S.label}>담당자</label>
-                  <select style={S.input} value={eForm.memberId||""} onChange={e=>{ const m=members.find(m=>m.id===Number(e.target.value)); setEForm(p=>({...p,memberId:Number(e.target.value)||null,memberName:m?.name||""})); }}>
-                    <option value="">선택</option>
-                    {members.filter(m=>m.dept===eForm.dept).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
-                </div>
-              )}
-              <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:22 }}>
-                <button style={S.btn("secondary")} onClick={()=>setEventModal(null)}>취소</button>
-                <button style={S.btn()} onClick={saveEvent}>저장</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div style={S.app}>
@@ -727,13 +762,33 @@ export default function App() {
         </nav>
       </header>
       <main style={S.main}>
-        {tab==="home" && <HomeTab />}
-        {tab==="members" && <MembersTab />}
-        {tab==="minutes" && <MinutesTab />}
-        {tab==="logs" && <LogsTab />}
-        {tab==="calendar" && <CalendarTab />}
+        {tab==="home" && (
+          <HomeTab members={members} minutes={minutes} logs={logs} events={events}
+            calYear={calYear} calMonth={calMonth} setMinuteModal={setMinuteModal} setTab={setTab} />
+        )}
+        {tab==="members" && (
+          <MembersTab members={members} setMembers={setMembers} logs={logs}
+            memberModal={memberModal} setMemberModal={setMemberModal} />
+        )}
+        {tab==="minutes" && (
+          <MinutesTab minutes={minutes} setMinutes={setMinutes}
+            minuteModal={minuteModal} setMinuteModal={setMinuteModal}
+            minuteFilter={minuteFilter} setMinuteFilter={setMinuteFilter} />
+        )}
+        {tab==="logs" && (
+          <LogsTab members={members} logs={logs} setLogs={setLogs}
+            logModal={logModal} setLogModal={setLogModal}
+            logFilter={logFilter} setLogFilter={setLogFilter} />
+        )}
+        {tab==="calendar" && (
+          <CalendarTab members={members} logs={logs} events={events} setEvents={setEvents}
+            calYear={calYear} setCalYear={setCalYear} calMonth={calMonth} setCalMonth={setCalMonth}
+            calMode={calMode} setCalMode={setCalMode} calDept={calDept} setCalDept={setCalDept}
+            calMemberId={calMemberId} setCalMemberId={setCalMemberId}
+            selectedDay={selectedDay} setSelectedDay={setSelectedDay}
+            eventModal={eventModal} setEventModal={setEventModal} />
+        )}
       </main>
     </div>
   );
 }
-
