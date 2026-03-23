@@ -5,7 +5,12 @@ const BRAND_LIGHT = "#EEF4FF";
 const DEPT_COLORS = { "기획부": "#4A8CFF", "홍보부": "#FF6B6B", "복지부": "#38C9A0", "학습부": "#F59E0B" };
 const DEPARTMENTS = Object.keys(DEPT_COLORS);
 const STATUS_COLOR = { "완료": "#38C9A0", "진행중": "#F59E0B", "예정": "#94A3B8" };
-const ROLES = ["회장", "부회장", "부장", "부원"];
+
+// 직급 체계: 집행부 (회장/부회장/총무) + 부서 (부장/부원)
+const EXEC_ROLES = ["회장", "부회장", "총무"];
+const DEPT_ROLES = ["부장", "부원"];
+const ALL_ROLES = [...EXEC_ROLES, ...DEPT_ROLES];
+
 const MONTHS = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 
 function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
@@ -14,80 +19,152 @@ const pad = n => String(n).padStart(2, "0");
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const todayObj = () => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() }; };
 
+// 집행부(회장/부회장/총무)는 dept를 "집행부"로 표시
 const seedMembers = [
-  { id:1, name:"김지수", dept:"기획부", role:"회장", studentId:"20210001", phone:"010-1234-5678", email:"jisu@hongik.ac.kr", joinYear:2025 },
-  { id:2, name:"이민준", dept:"홍보부", role:"부장", studentId:"20210045", phone:"010-2345-6789", email:"minjun@hongik.ac.kr", joinYear:2025 },
-  { id:3, name:"박소연", dept:"복지부", role:"부장", studentId:"20220012", phone:"010-3456-7890", email:"soyeon@hongik.ac.kr", joinYear:2025 },
-  { id:4, name:"최현우", dept:"학습부", role:"부장", studentId:"20220067", phone:"010-4567-8901", email:"hyunwoo@hongik.ac.kr", joinYear:2025 },
-  { id:5, name:"정다은", dept:"기획부", role:"부원", studentId:"20230023", phone:"010-5678-9012", email:"daeun@hongik.ac.kr", joinYear:2025 },
-  { id:6, name:"한승민", dept:"홍보부", role:"부원", studentId:"20230089", phone:"010-6789-0123", email:"seungmin@hongik.ac.kr", joinYear:2025 },
-  { id:7, name:"오지현", dept:"복지부", role:"부원", studentId:"20240011", phone:"010-7890-1234", email:"jihyun@hongik.ac.kr", joinYear:2025 },
-  { id:8, name:"윤서준", dept:"학습부", role:"부원", studentId:"20240056", phone:"010-8901-2345", email:"seojun@hongik.ac.kr", joinYear:2025 },
+  { id:1, name:"김지수", dept:"집행부", role:"회장",  studentId:"20210001", phone:"010-1234-5678", email:"jisu@hongik.ac.kr",    joinYear:2025 },
+  { id:2, name:"이민준", dept:"집행부", role:"부회장", studentId:"20210045", phone:"010-2345-6789", email:"minjun@hongik.ac.kr",  joinYear:2025 },
+  { id:3, name:"박소연", dept:"집행부", role:"총무",   studentId:"20220012", phone:"010-3456-7890", email:"soyeon@hongik.ac.kr",  joinYear:2025 },
+  { id:4, name:"최현우", dept:"기획부", role:"부장",   studentId:"20220067", phone:"010-4567-8901", email:"hyunwoo@hongik.ac.kr", joinYear:2025 },
+  { id:5, name:"정다은", dept:"기획부", role:"부원",   studentId:"20230023", phone:"010-5678-9012", email:"daeun@hongik.ac.kr",   joinYear:2025 },
+  { id:6, name:"한승민", dept:"홍보부", role:"부장",   studentId:"20230089", phone:"010-6789-0123", email:"seungmin@hongik.ac.kr",joinYear:2025 },
+  { id:7, name:"오지현", dept:"홍보부", role:"부원",   studentId:"20240011", phone:"010-7890-1234", email:"jihyun@hongik.ac.kr",  joinYear:2025 },
+  { id:8, name:"윤서준", dept:"복지부", role:"부장",   studentId:"20240056", phone:"010-8901-2345", email:"seojun@hongik.ac.kr",  joinYear:2025 },
+  { id:9, name:"강나연", dept:"복지부", role:"부원",   studentId:"20240078", phone:"010-9012-3456", email:"nayeon@hongik.ac.kr",  joinYear:2025 },
+  { id:10,name:"임도현", dept:"학습부", role:"부장",   studentId:"20230045", phone:"010-0123-4567", email:"dohyun@hongik.ac.kr",  joinYear:2025 },
+  { id:11,name:"송유진", dept:"학습부", role:"부원",   studentId:"20240091", phone:"010-1234-5670", email:"yujin@hongik.ac.kr",   joinYear:2025 },
 ];
 const seedMinutes = [
-  { id:1, title:"1차 정기회의", date:"2025-03-05", dept:"기획부", author:"김지수", summary:"OT 행사 기획안 논의 및 역할 분배", pdfName:"1차정기회의록.pdf", pdfData:null, secretaryName:"OT_서기록.pdf", secretaryData:null },
-  { id:2, title:"SNS 운영 회의", date:"2025-03-12", dept:"홍보부", author:"이민준", summary:"인스타그램 콘텐츠 방향 결정", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null },
-  { id:3, title:"복지 예산 회의", date:"2025-03-20", dept:"복지부", author:"박소연", summary:"1학기 복지 예산 배정 및 간식 행사 계획", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null },
+  { id:1, title:"1차 정기회의", date:"2025-03-05", dept:"기획부", author:"최현우", summary:"OT 행사 기획안 논의 및 역할 분배", pdfName:"1차정기회의록.pdf", pdfData:null, secretaryName:"OT_서기록.pdf", secretaryData:null },
+  { id:2, title:"SNS 운영 회의", date:"2025-03-12", dept:"홍보부", author:"한승민", summary:"인스타그램 콘텐츠 방향 결정", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null },
+  { id:3, title:"복지 예산 회의", date:"2025-03-20", dept:"복지부", author:"윤서준", summary:"1학기 복지 예산 배정 및 간식 행사 계획", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null },
 ];
 const seedEvents = [
-  { id:1, title:"신입생 OT", date:"2025-03-15", dept:"기획부", memberId:null, memberName:"전체", color:"#4A8CFF", type:"전체" },
-  { id:2, title:"인스타 업로드", date:"2025-03-17", dept:"홍보부", memberId:2, memberName:"이민준", color:"#FF6B6B", type:"개인" },
-  { id:3, title:"스터디 모집 마감", date:"2025-03-20", dept:"학습부", memberId:4, memberName:"최현우", color:"#F59E0B", type:"개인" },
-  { id:4, title:"간식 행사", date:"2025-03-25", dept:"복지부", memberId:3, memberName:"박소연", color:"#38C9A0", type:"개인" },
-  { id:5, title:"4월 정기회의", date:"2025-04-02", dept:"기획부", memberId:null, memberName:"전체", color:"#4A8CFF", type:"전체" },
-  { id:6, title:"기획부 전체회의", date:"2025-03-28", dept:"기획부", memberId:null, memberName:"기획부", color:"#4A8CFF", type:"부서" },
-  { id:7, title:"OT 준비회의", date:"2025-03-10", dept:"기획부", memberId:5, memberName:"정다은", color:"#4A8CFF", type:"개인" },
+  { id:1, title:"신입생 OT",      date:"2025-03-15", dept:"기획부", memberId:null, memberName:"전체",  color:"#4A8CFF", type:"전체" },
+  { id:2, title:"인스타 업로드",   date:"2025-03-17", dept:"홍보부", memberId:7,   memberName:"오지현", color:"#FF6B6B", type:"개인" },
+  { id:3, title:"스터디 모집 마감",date:"2025-03-20", dept:"학습부", memberId:10,  memberName:"임도현", color:"#F59E0B", type:"개인" },
+  { id:4, title:"간식 행사",       date:"2025-03-25", dept:"복지부", memberId:8,   memberName:"윤서준", color:"#38C9A0", type:"개인" },
+  { id:5, title:"4월 정기회의",    date:"2025-04-02", dept:"기획부", memberId:null, memberName:"전체",  color:"#4A8CFF", type:"전체" },
+  { id:6, title:"기획부 전체회의", date:"2025-03-28", dept:"기획부", memberId:null, memberName:"기획부",color:"#4A8CFF", type:"부서" },
 ];
 const seedLogs = [
-  { id:1, date:"2025-03-06", dept:"기획부", memberId:1, member:"김지수", task:"OT 기획안 초안 작성", status:"완료" },
-  { id:2, date:"2025-03-06", dept:"홍보부", memberId:2, member:"이민준", task:"학과 SNS 계정 인수인계", status:"완료" },
-  { id:3, date:"2025-03-10", dept:"복지부", memberId:3, member:"박소연", task:"간식 업체 리스트업", status:"진행중" },
-  { id:4, date:"2025-03-12", dept:"학습부", memberId:4, member:"최현우", task:"스터디 모집 공고문 작성", status:"진행중" },
-  { id:5, date:"2025-03-18", dept:"기획부", memberId:5, member:"정다은", task:"OT 진행 대본 완성", status:"예정" },
-  { id:6, date:"2025-03-22", dept:"홍보부", memberId:6, member:"한승민", task:"3월 카드뉴스 제작", status:"진행중" },
+  { id:1, date:"2025-03-06", dept:"기획부", memberId:4,  member:"최현우", task:"OT 기획안 초안 작성",    status:"완료"  },
+  { id:2, date:"2025-03-06", dept:"홍보부", memberId:6,  member:"한승민", task:"학과 SNS 계정 인수인계", status:"완료"  },
+  { id:3, date:"2025-03-10", dept:"복지부", memberId:8,  member:"윤서준", task:"간식 업체 리스트업",      status:"진행중"},
+  { id:4, date:"2025-03-12", dept:"학습부", memberId:10, member:"임도현", task:"스터디 모집 공고문 작성", status:"진행중"},
+  { id:5, date:"2025-03-18", dept:"기획부", memberId:5,  member:"정다은", task:"OT 진행 대본 완성",       status:"예정"  },
+  { id:6, date:"2025-03-22", dept:"홍보부", memberId:7,  member:"오지현", task:"3월 카드뉴스 제작",       status:"진행중"},
 ];
 
+/* ─── 스타일 ─── */
 const S = {
-  app: { fontFamily:"'Noto Sans KR', sans-serif", minHeight:"100vh", background:"#F0F4FA", color:"#1A202C" },
-  header: { background:"#fff", borderBottom:"1px solid #E2E8F0", padding:"0 28px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60, position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 8px rgba(74,140,255,.07)" },
-  logoMark: { width:34, height:34, borderRadius:9, background:BRAND, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:900, fontSize:15 },
-  main: { maxWidth:1180, margin:"0 auto", padding:"28px 20px" },
-  card: { background:"#fff", borderRadius:14, padding:22, boxShadow:"0 1px 6px rgba(0,0,0,.05)", border:"1px solid #EDF2F7" },
-  sectionTitle: { fontSize:20, fontWeight:900, marginBottom:18 },
-  navBtn: (a) => ({ padding:"6px 13px", borderRadius:7, border:"none", background:a?BRAND_LIGHT:"transparent", color:a?BRAND:"#4A5568", fontWeight:a?700:500, cursor:"pointer", fontSize:13, transition:"all .13s" }),
-  btn: (v="primary") => ({ padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:700, fontSize:13, transition:"all .13s", background:v==="primary"?BRAND:v==="danger"?"#FEE2E2":v==="ghost"?"transparent":"#EDF2F7", color:v==="primary"?"#fff":v==="danger"?"#E53E3E":v==="ghost"?BRAND:"#4A5568" }),
   input: { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #E2E8F0", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"'Noto Sans KR', sans-serif", background:"#FAFBFC" },
   label: { fontSize:11, fontWeight:700, color:"#94A3B8", marginBottom:5, display:"block", letterSpacing:".5px", textTransform:"uppercase" },
+  card: { background:"#fff", borderRadius:14, padding:22, boxShadow:"0 1px 6px rgba(0,0,0,.05)", border:"1px solid #EDF2F7" },
+  btn: (v="primary") => ({ padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:700, fontSize:13,
+    background: v==="primary"?BRAND: v==="danger"?"#FEE2E2": v==="ghost"?"transparent":"#EDF2F7",
+    color:       v==="primary"?"#fff": v==="danger"?"#E53E3E": v==="ghost"?BRAND:"#4A5568" }),
   tag: (c) => ({ display:"inline-flex", alignItems:"center", padding:"2px 9px", borderRadius:20, fontSize:11, fontWeight:700, background:c+"22", color:c }),
   overlay: { position:"fixed", inset:0, background:"rgba(15,23,42,.45)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(2px)" },
   modal: (w=520) => ({ background:"#fff", borderRadius:18, padding:30, width:"100%", maxWidth:w, maxHeight:"88vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.18)" }),
   grid2: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 },
+  sectionTitle: { fontSize:20, fontWeight:900, marginBottom:18 },
 };
 
-/* ════════════════════════════════════════
+const ROLE_COLOR = {
+  "회장":"#4A8CFF", "부회장":"#8B5CF6", "총무":"#EC4899",
+  "부장":"#F59E0B", "부원":"#94A3B8",
+};
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════ */
+function Sidebar({ tab, setTab }) {
+  const TABS = [
+    { id:"home",     label:"홈",       icon:"🏠" },
+    { id:"members",  label:"부원 관리", icon:"👥" },
+    { id:"minutes",  label:"회의록",    icon:"📋" },
+    { id:"logs",     label:"업무 일지", icon:"📝" },
+    { id:"calendar", label:"캘린더",    icon:"📅" },
+  ];
+  return (
+    <aside style={{
+      width:220, minHeight:"100vh", background:"#fff",
+      borderRight:"1px solid #E2E8F0", display:"flex", flexDirection:"column",
+      position:"fixed", top:0, left:0, zIndex:50,
+      boxShadow:"1px 0 8px rgba(74,140,255,.06)",
+    }}>
+      {/* Logo */}
+      <div style={{ padding:"24px 20px 20px", borderBottom:"1px solid #EDF2F7" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+          <div style={{ width:36, height:36, borderRadius:10, background:BRAND, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:900, fontSize:16, flexShrink:0 }}>이</div>
+          <div>
+            <div style={{ fontSize:15, fontWeight:900, color:"#1A202C", lineHeight:1.2 }}>이상</div>
+            <div style={{ fontSize:10, color:"#94A3B8", marginTop:1 }}>제39대 학생회</div>
+          </div>
+        </div>
+        <div style={{ fontSize:10, color:"#CBD5E0", fontWeight:600, letterSpacing:1 }}>홍익대 수학교육과 · 2025</div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ flex:1, padding:"14px 12px" }}>
+        <div style={{ fontSize:10, color:"#CBD5E0", fontWeight:700, letterSpacing:1.2, padding:"0 8px", marginBottom:8, textTransform:"uppercase" }}>메뉴</div>
+        {TABS.map(t => {
+          const active = tab === t.id;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              width:"100%", display:"flex", alignItems:"center", gap:10,
+              padding:"10px 12px", borderRadius:10, border:"none", cursor:"pointer",
+              background: active ? BRAND_LIGHT : "transparent",
+              color: active ? BRAND : "#4A5568",
+              fontWeight: active ? 800 : 500,
+              fontSize:14, marginBottom:2,
+              transition:"all .13s",
+              fontFamily:"'Noto Sans KR', sans-serif",
+            }}>
+              <span style={{ fontSize:16 }}>{t.icon}</span>
+              <span>{t.label}</span>
+              {active && <div style={{ marginLeft:"auto", width:5, height:5, borderRadius:"50%", background:BRAND }} />}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Bottom */}
+      <div style={{ padding:"14px 20px", borderTop:"1px solid #EDF2F7" }}>
+        <div style={{ fontSize:11, color:"#CBD5E0", textAlign:"center" }}>Beta v0.1</div>
+      </div>
+    </aside>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    HOME TAB
-════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function HomeTab({ members, minutes, logs, events, calYear, calMonth, setMinuteModal, setTab }) {
   const eventsThisMonth = events.filter(e => {
     const [ey, em] = e.date.split("-").map(Number);
     return ey === calYear && em === calMonth + 1;
   });
-  const membersOfDept = (dept) => members.filter(m => m.dept === dept);
+  const deptMembers = (dept) => members.filter(m => m.dept === dept);
+  const execMembers = members.filter(m => EXEC_ROLES.includes(m.role));
 
   return (
     <div>
-      <div style={{ marginBottom:24 }}>
+      {/* 헤더 */}
+      <div style={{ marginBottom:28 }}>
         <div style={{ fontSize:11, color:"#94A3B8", fontWeight:700, letterSpacing:1.5, marginBottom:6 }}>HONGIK UNIV · MATH EDUCATION</div>
         <div style={{ fontSize:26, fontWeight:900 }}>제 39대 학생회 <span style={{ color:BRAND }}>이상</span></div>
         <div style={{ fontSize:13, color:"#94A3B8", marginTop:3 }}>2025년 워크스페이스</div>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:22 }}>
+
+      {/* 통계 카드 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:24 }}>
         {[
-          { label:"총 부원", value:members.length, icon:"👥", c:"#4A8CFF" },
-          { label:"회의록", value:minutes.length, icon:"📋", c:"#8B5CF6" },
-          { label:"업무 일지", value:logs.length, icon:"📝", c:"#FF6B6B" },
-          { label:"이달 일정", value:eventsThisMonth.length, icon:"📅", c:"#38C9A0" },
-          { label:"완료 업무", value:logs.filter(l=>l.status==="완료").length, icon:"✅", c:"#F59E0B" },
+          { label:"총 부원",   value:members.length,                             icon:"👥", c:"#4A8CFF" },
+          { label:"회의록",    value:minutes.length,                             icon:"📋", c:"#8B5CF6" },
+          { label:"업무 일지", value:logs.length,                                icon:"📝", c:"#FF6B6B" },
+          { label:"이달 일정", value:eventsThisMonth.length,                     icon:"📅", c:"#38C9A0" },
+          { label:"완료 업무", value:logs.filter(l=>l.status==="완료").length,   icon:"✅", c:"#F59E0B" },
         ].map(s => (
           <div key={s.label} style={{ ...S.card, textAlign:"center", padding:18 }}>
             <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
@@ -96,12 +173,28 @@ function HomeTab({ members, minutes, logs, events, calYear, calMonth, setMinuteM
           </div>
         ))}
       </div>
+
+      {/* 집행부 */}
+      <div style={{ ...S.card, marginBottom:20 }}>
+        <div style={{ fontWeight:800, fontSize:14, marginBottom:14 }}>🎖 집행부</div>
+        <div style={{ display:"flex", gap:14 }}>
+          {execMembers.map(m => (
+            <div key={m.id} style={{ flex:1, padding:14, borderRadius:10, background:ROLE_COLOR[m.role]+"10", border:`1.5px solid ${ROLE_COLOR[m.role]}30`, textAlign:"center" }}>
+              <div style={{ width:40, height:40, borderRadius:12, background:ROLE_COLOR[m.role]+"25", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:ROLE_COLOR[m.role], margin:"0 auto 8px" }}>{m.name[0]}</div>
+              <div style={{ fontWeight:900, fontSize:14 }}>{m.name}</div>
+              <div style={{ ...S.tag(ROLE_COLOR[m.role]), marginTop:6, justifyContent:"center" }}>{m.role}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:16, marginBottom:16 }}>
+        {/* 부서 현황 */}
         <div style={S.card}>
           <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>부서 현황</div>
           {DEPARTMENTS.map(dept => {
             const c = DEPT_COLORS[dept];
-            const dm = membersOfDept(dept);
+            const dm = deptMembers(dept);
             const dl = logs.filter(l => l.dept === dept);
             const pct = dl.length ? (dl.filter(l=>l.status==="완료").length / dl.length) * 100 : 0;
             return (
@@ -116,6 +209,7 @@ function HomeTab({ members, minutes, logs, events, calYear, calMonth, setMinuteM
             );
           })}
         </div>
+        {/* 다가오는 일정 */}
         <div style={S.card}>
           <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>다가오는 일정</div>
           {events.filter(e=>e.date>=todayStr()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5).map(e => (
@@ -127,6 +221,8 @@ function HomeTab({ members, minutes, logs, events, calYear, calMonth, setMinuteM
           ))}
         </div>
       </div>
+
+      {/* 최근 회의록 */}
       <div style={S.card}>
         <div style={{ fontWeight:800, marginBottom:14, fontSize:14 }}>최근 회의록</div>
         <div style={{ display:"flex", gap:12 }}>
@@ -149,10 +245,25 @@ function HomeTab({ members, minutes, logs, events, calYear, calMonth, setMinuteM
   );
 }
 
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    MEMBER FORM MODAL
-════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function MemberFormModal({ data, setData, onSave, onClose, onDelete, isEdit }) {
+  const isExec = EXEC_ROLES.includes(data.role);
+  const availableRoles = data.dept === "집행부" ? EXEC_ROLES : DEPT_ROLES;
+
+  function handleDeptChange(dept) {
+    const newRole = dept === "집행부" ? "회장" : "부원";
+    setData(p => ({ ...p, dept, role: newRole }));
+  }
+  function handleRoleChange(role) {
+    // 집행부 직책 선택 시 자동으로 dept도 집행부로
+    if (EXEC_ROLES.includes(role)) setData(p => ({ ...p, role, dept:"집행부" }));
+    else setData(p => ({ ...p, role }));
+  }
+
+  const deptOptions = ["집행부", ...DEPARTMENTS];
+
   return (
     <div style={S.overlay}>
       <div style={S.modal()}>
@@ -162,14 +273,16 @@ function MemberFormModal({ data, setData, onSave, onClose, onDelete, isEdit }) {
           <div><label style={S.label}>학번</label><input style={S.input} value={data.studentId} onChange={e=>setData(p=>({...p,studentId:e.target.value}))} /></div>
         </div>
         <div style={{ ...S.grid2, marginTop:12 }}>
-          <div><label style={S.label}>부서</label>
-            <select style={S.input} value={data.dept} onChange={e=>setData(p=>({...p,dept:e.target.value}))}>
-              {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
+          <div>
+            <label style={S.label}>소속</label>
+            <select style={S.input} value={data.dept} onChange={e=>handleDeptChange(e.target.value)}>
+              {deptOptions.map(d=><option key={d}>{d}</option>)}
             </select>
           </div>
-          <div><label style={S.label}>직책</label>
-            <select style={S.input} value={data.role} onChange={e=>setData(p=>({...p,role:e.target.value}))}>
-              {ROLES.map(r=><option key={r}>{r}</option>)}
+          <div>
+            <label style={S.label}>직책</label>
+            <select style={S.input} value={data.role} onChange={e=>handleRoleChange(e.target.value)}>
+              {availableRoles.map(r=><option key={r}>{r}</option>)}
             </select>
           </div>
         </div>
@@ -188,22 +301,28 @@ function MemberFormModal({ data, setData, onSave, onClose, onDelete, isEdit }) {
   );
 }
 
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    MEMBERS TAB
-════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function MembersTab({ members, setMembers, logs, memberModal, setMemberModal }) {
-  const [deptFilter, setDeptFilter] = useState("전체");
+  const [groupFilter, setGroupFilter] = useState("전체");
   const [editMember, setEditMember] = useState(null);
   const emptyForm = { name:"", dept:"기획부", role:"부원", studentId:"", phone:"", email:"", joinYear:2025 };
   const [form, setForm] = useState(emptyForm);
 
-  const filtered = deptFilter === "전체" ? members : members.filter(m => m.dept === deptFilter);
+  const filterOptions = ["전체", "집행부", ...DEPARTMENTS];
+  const filtered = groupFilter === "전체" ? members : members.filter(m => m.dept === groupFilter);
+
+  // 표시 순서: 집행부 먼저, 그 다음 부서별
+  const sorted = [...filtered].sort((a, b) => {
+    const order = ["집행부", ...DEPARTMENTS];
+    return order.indexOf(a.dept) - order.indexOf(b.dept);
+  });
 
   function saveNew() {
     if (!form.name || !form.studentId) return;
     setMembers(p => [...p, { ...form, id: Date.now() }]);
-    setForm(emptyForm);
-    setMemberModal(null);
+    setForm(emptyForm); setMemberModal(null);
   }
   function saveEdit() {
     setMembers(p => p.map(m => m.id === editMember.id ? editMember : m));
@@ -214,61 +333,86 @@ function MembersTab({ members, setMembers, logs, memberModal, setMemberModal }) 
     setEditMember(null); setMemberModal(null);
   }
 
+  // 그룹별 렌더
+  const groups = groupFilter === "전체"
+    ? [{ label:"🎖 집행부", key:"집행부", color:"#4A8CFF" }, ...DEPARTMENTS.map(d=>({ label:`${d}`, key:d, color:DEPT_COLORS[d] }))]
+    : groupFilter === "집행부"
+      ? [{ label:"🎖 집행부", key:"집행부", color:"#4A8CFF" }]
+      : [{ label:groupFilter, key:groupFilter, color:DEPT_COLORS[groupFilter] }];
+
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
         <div style={S.sectionTitle}>👥 부원 관리</div>
         <button style={S.btn()} onClick={()=>setMemberModal("add")}>+ 부원 등록</button>
       </div>
-      <div style={{ display:"flex", gap:8, marginBottom:18 }}>
-        {["전체",...DEPARTMENTS].map(d=>(
-          <button key={d} style={{ ...S.btn(deptFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setDeptFilter(d)}>{d}</button>
+      <div style={{ display:"flex", gap:8, marginBottom:24 }}>
+        {filterOptions.map(d=>(
+          <button key={d} style={{ ...S.btn(groupFilter===d?"primary":"secondary"), padding:"5px 13px" }} onClick={()=>setGroupFilter(d)}>{d}</button>
         ))}
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
-        {filtered.map(m => {
-          const c = DEPT_COLORS[m.dept];
-          const mLogs = logs.filter(l=>l.memberId===m.id);
-          return (
-            <div key={m.id} style={{ ...S.card, cursor:"pointer", padding:18 }}
-              onClick={()=>{ setEditMember({...m}); setMemberModal("edit"); }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-                <div style={{ width:42, height:42, borderRadius:12, background:c+"20", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:c }}>{m.name[0]}</div>
-                <div>
-                  <div style={{ fontWeight:900, fontSize:15 }}>{m.name}</div>
-                  <div style={{ fontSize:11, color:"#94A3B8" }}>{m.studentId}</div>
-                </div>
-              </div>
-              <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-                <span style={S.tag(c)}>{m.dept}</span>
-                <span style={S.tag("#8B5CF6")}>{m.role}</span>
-              </div>
-              <div style={{ fontSize:12, color:"#718096" }}>{m.phone}</div>
-              <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{m.email}</div>
-              <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #F0F5FF", display:"flex", justifyContent:"space-between" }}>
-                <span style={{ fontSize:11, color:"#94A3B8" }}>업무 {mLogs.length}건</span>
-                <span style={{ fontSize:11, color:"#38C9A0", fontWeight:700 }}>완료 {mLogs.filter(l=>l.status==="완료").length}건</span>
-              </div>
+
+      {groups.map(g => {
+        const gMembers = members.filter(m => m.dept === g.key);
+        if (gMembers.length === 0) return null;
+        return (
+          <div key={g.key} style={{ marginBottom:28 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+              <div style={{ width:10, height:10, borderRadius:"50%", background:g.color }} />
+              <div style={{ fontWeight:800, fontSize:15, color:"#2D3748" }}>{g.label}</div>
+              <div style={{ fontSize:12, color:"#94A3B8" }}>{gMembers.length}명</div>
             </div>
-          );
-        })}
-      </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+              {gMembers.map(m => {
+                const c = ROLE_COLOR[m.role] || "#94A3B8";
+                const deptColor = m.dept === "집행부" ? "#4A8CFF" : (DEPT_COLORS[m.dept] || "#94A3B8");
+                const mLogs = logs.filter(l=>l.memberId===m.id);
+                return (
+                  <div key={m.id} style={{ ...S.card, cursor:"pointer", padding:18 }}
+                    onClick={()=>{ setEditMember({...m}); setMemberModal("edit"); }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                      <div style={{ width:42, height:42, borderRadius:12, background:c+"20", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:c }}>{m.name[0]}</div>
+                      <div>
+                        <div style={{ fontWeight:900, fontSize:15 }}>{m.name}</div>
+                        <div style={{ fontSize:11, color:"#94A3B8" }}>{m.studentId}</div>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap" }}>
+                      {m.dept !== "집행부" && <span style={S.tag(deptColor)}>{m.dept}</span>}
+                      <span style={S.tag(c)}>{m.role}</span>
+                    </div>
+                    <div style={{ fontSize:12, color:"#718096" }}>{m.phone}</div>
+                    <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{m.email}</div>
+                    {m.dept !== "집행부" && (
+                      <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #F0F5FF", display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ fontSize:11, color:"#94A3B8" }}>업무 {mLogs.length}건</span>
+                        <span style={{ fontSize:11, color:"#38C9A0", fontWeight:700 }}>완료 {mLogs.filter(l=>l.status==="완료").length}건</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
       {memberModal==="add" && (
         <MemberFormModal data={form} setData={setForm} onSave={saveNew} onClose={()=>setMemberModal(null)} />
       )}
       {memberModal==="edit" && editMember && (
-        <MemberFormModal data={editMember} setData={setEditMember} onSave={saveEdit} onClose={()=>{ setMemberModal(null); setEditMember(null); }} onDelete={()=>del(editMember.id)} isEdit />
+        <MemberFormModal data={editMember} setData={setEditMember} onSave={saveEdit}
+          onClose={()=>{ setMemberModal(null); setEditMember(null); }} onDelete={()=>del(editMember.id)} isEdit />
       )}
     </div>
   );
 }
 
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    MINUTES TAB
-════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function MinutesTab({ minutes, setMinutes, minuteModal, setMinuteModal, minuteFilter, setMinuteFilter }) {
-  const pdfRef = useRef();
-  const secRef = useRef();
+  const pdfRef = useRef(); const secRef = useRef();
   const emptyForm = { title:"", date:"", dept:"기획부", author:"", summary:"", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null };
   const [form, setForm] = useState(emptyForm);
 
@@ -276,7 +420,7 @@ function MinutesTab({ minutes, setMinutes, minuteModal, setMinuteModal, minuteFi
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      if (type === "pdf") setForm(p=>({...p, pdfName:file.name, pdfData:ev.target.result}));
+      if (type==="pdf") setForm(p=>({...p, pdfName:file.name, pdfData:ev.target.result}));
       else setForm(p=>({...p, secretaryName:file.name, secretaryData:ev.target.result}));
     };
     reader.readAsDataURL(file);
@@ -284,11 +428,9 @@ function MinutesTab({ minutes, setMinutes, minuteModal, setMinuteModal, minuteFi
   function save() {
     if (!form.title || !form.date) return;
     setMinutes(p => [{ ...form, id:Date.now() }, ...p]);
-    setForm(emptyForm);
-    setMinuteModal(null);
+    setForm(emptyForm); setMinuteModal(null);
   }
-
-  const filtered = minuteFilter === "전체" ? minutes : minutes.filter(m => m.dept === minuteFilter);
+  const filtered = minuteFilter==="전체" ? minutes : minutes.filter(m=>m.dept===minuteFilter);
 
   return (
     <div>
@@ -357,7 +499,7 @@ function MinutesTab({ minutes, setMinutes, minuteModal, setMinuteModal, minuteFi
       )}
 
       {/* Add Modal */}
-      {minuteModal === "add" && (
+      {minuteModal==="add" && (
         <div style={S.overlay}>
           <div style={S.modal(560)}>
             <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>새 회의록 등록</div>
@@ -399,9 +541,9 @@ function MinutesTab({ minutes, setMinutes, minuteModal, setMinuteModal, minuteFi
   );
 }
 
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    LOGS TAB
-════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function LogsTab({ members, logs, setLogs, logModal, setLogModal, logFilter, setLogFilter }) {
   const emptyForm = { date:"", dept:"기획부", memberId:"", member:"", task:"", status:"예정" };
   const [form, setForm] = useState(emptyForm);
@@ -410,11 +552,9 @@ function LogsTab({ members, logs, setLogs, logModal, setLogModal, logFilter, set
   function save() {
     if (!form.task || !form.date) return;
     setLogs(p => [{ ...form, id:Date.now() }, ...p]);
-    setForm(emptyForm);
-    setLogModal(null);
+    setForm(emptyForm); setLogModal(null);
   }
-
-  const filtered = logFilter === "전체" ? logs : logs.filter(l => l.dept === logFilter);
+  const filtered = logFilter==="전체" ? logs : logs.filter(l=>l.dept===logFilter);
 
   return (
     <div>
@@ -482,9 +622,9 @@ function LogsTab({ members, logs, setLogs, logModal, setLogModal, logFilter, set
   );
 }
 
-/* ════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    CALENDAR TAB
-════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, calMonth, setCalMonth, calMode, setCalMode, calDept, setCalDept, calMemberId, setCalMemberId, selectedDay, setSelectedDay, eventModal, setEventModal }) {
   const td = todayObj();
   const days = daysInMonth(calYear, calMonth);
@@ -496,9 +636,9 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
   const membersOfDept = (dept) => members.filter(m => m.dept === dept);
 
   function getCalendarEvents() {
-    if (calMode === "전체") return events;
-    if (calMode === "부서") return events.filter(e => e.dept === calDept);
-    if (calMode === "개인") return calMemberId ? events.filter(e => e.memberId === calMemberId) : [];
+    if (calMode==="전체") return events;
+    if (calMode==="부서") return events.filter(e => e.dept === calDept);
+    if (calMode==="개인") return calMemberId ? events.filter(e => e.memberId === calMemberId) : [];
     return events;
   }
   function getEventsForDay(d) {
@@ -510,8 +650,7 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
   function saveEvent() {
     if (!eForm.title || !eForm.date) return;
     setEvents(p=>[...p,{ ...eForm, id:Date.now(), color:DEPT_COLORS[eForm.dept] }]);
-    setEForm(emptyEForm);
-    setEventModal(null);
+    setEForm(emptyEForm); setEventModal(null);
   }
 
   return (
@@ -521,7 +660,7 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
         <button style={S.btn()} onClick={()=>setEventModal("add")}>+ 일정 추가</button>
       </div>
 
-      {/* Mode Control */}
+      {/* 모드 컨트롤 */}
       <div style={{ ...S.card, padding:16, marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
           <div style={{ display:"flex", gap:6 }}>
@@ -547,14 +686,14 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
               <select style={{ ...S.input, width:"auto", padding:"6px 10px" }} value={calMemberId||""}
                 onChange={e=>setCalMemberId(Number(e.target.value)||null)}>
                 <option value="">부원 선택</option>
-                {membersOfDept(calDept).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                {membersOfDept(calDept).map(m=><option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
               </select>
             </div>
           )}
         </div>
         {calMode==="개인" && calMember && (
           <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:12, padding:"10px 14px", background:DEPT_COLORS[calMember.dept]+"10", borderRadius:10, border:`1px solid ${DEPT_COLORS[calMember.dept]}30` }}>
-            <div style={{ width:34, height:34, borderRadius:9, background:DEPT_COLORS[calMember.dept]+"25", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:16, color:DEPT_COLORS[calMember.dept] }}>{calMember.name[0]}</div>
+            <div style={{ width:34, height:34, borderRadius:9, background:ROLE_COLOR[calMember.role]+"25", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:16, color:ROLE_COLOR[calMember.role] }}>{calMember.name[0]}</div>
             <div>
               <div style={{ fontWeight:900, fontSize:14 }}>{calMember.name}</div>
               <div style={{ fontSize:11, color:"#94A3B8" }}>{calMember.dept} · {calMember.role} · {calMember.studentId}</div>
@@ -569,7 +708,6 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:16 }}>
-        {/* Calendar grid */}
         <div style={S.card}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
             <button style={S.btn("ghost")} onClick={()=>{ if(calMonth===0){setCalMonth(11);setCalYear(y=>y-1);}else setCalMonth(m=>m-1); setSelectedDay(null); }}>◀</button>
@@ -601,7 +739,6 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
           </div>
         </div>
 
-        {/* Sidebar */}
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           <div style={S.card}>
             <div style={{ fontWeight:900, fontSize:14, marginBottom:12, color:BRAND }}>
@@ -637,8 +774,9 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
                 return (
                   <div key={m.id} style={{ padding:"10px 0", borderBottom:"1px solid #F0F5FF" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                      <div style={{ width:26, height:26, borderRadius:7, background:c+"25", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:c }}>{m.name[0]}</div>
+                      <div style={{ width:26, height:26, borderRadius:7, background:ROLE_COLOR[m.role]+"25", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:ROLE_COLOR[m.role] }}>{m.name[0]}</div>
                       <span style={{ fontWeight:800, fontSize:13 }}>{m.name}</span>
+                      <span style={S.tag(ROLE_COLOR[m.role])}>{m.role}</span>
                       <span style={{ marginLeft:"auto", fontSize:11, color:c, fontWeight:700 }}>{mLogs.length}건</span>
                     </div>
                     {mLogs.slice(0,3).map(l=>(
@@ -697,7 +835,7 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
               <div style={{ marginTop:12 }}><label style={S.label}>담당자</label>
                 <select style={S.input} value={eForm.memberId||""} onChange={e=>{ const m=members.find(m=>m.id===Number(e.target.value)); setEForm(p=>({...p,memberId:Number(e.target.value)||null,memberName:m?.name||""})); }}>
                   <option value="">선택</option>
-                  {eDeptMembers.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                  {eDeptMembers.map(m=><option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
                 </select>
               </div>
             )}
@@ -712,9 +850,9 @@ function CalendarTab({ members, logs, events, setEvents, calYear, setCalYear, ca
   );
 }
 
-/* ════════════════════════════════════════
-   APP (최상위 — 상태만 관리)
-════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   APP
+═══════════════════════════════════════════════════ */
 export default function App() {
   const [tab, setTab] = useState("home");
   const [members, setMembers] = useState(seedMembers);
@@ -736,32 +874,15 @@ export default function App() {
   const [minuteFilter, setMinuteFilter] = useState("전체");
   const [logFilter, setLogFilter] = useState("전체");
 
-  const TABS = [
-    { id:"home", label:"홈", icon:"⬡" },
-    { id:"members", label:"부원 관리", icon:"👥" },
-    { id:"minutes", label:"회의록", icon:"📋" },
-    { id:"logs", label:"업무 일지", icon:"📝" },
-    { id:"calendar", label:"캘린더", icon:"📅" },
-  ];
-
   return (
-    <div style={S.app}>
+    <div style={{ fontFamily:"'Noto Sans KR', sans-serif", display:"flex", minHeight:"100vh", background:"#F0F4FA", color:"#1A202C" }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      <header style={S.header}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={S.logoMark}>이</div>
-          <div>
-            <div style={{ fontSize:15, fontWeight:900, color:"#1A202C" }}>이상 워크스페이스</div>
-            <div style={{ fontSize:10, color:"#94A3B8", marginTop:1 }}>홍익대 수학교육과 제39대 학생회</div>
-          </div>
-        </div>
-        <nav style={{ display:"flex", gap:4 }}>
-          {TABS.map(t=>(
-            <button key={t.id} style={S.navBtn(tab===t.id)} onClick={()=>setTab(t.id)}>{t.icon} {t.label}</button>
-          ))}
-        </nav>
-      </header>
-      <main style={S.main}>
+
+      {/* 좌측 사이드바 */}
+      <Sidebar tab={tab} setTab={setTab} />
+
+      {/* 메인 콘텐츠 */}
+      <main style={{ marginLeft:220, flex:1, padding:"32px 32px 40px", minHeight:"100vh" }}>
         {tab==="home" && (
           <HomeTab members={members} minutes={minutes} logs={logs} events={events}
             calYear={calYear} calMonth={calMonth} setMinuteModal={setMinuteModal} setTab={setTab} />
