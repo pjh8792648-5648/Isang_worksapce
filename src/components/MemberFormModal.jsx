@@ -1,19 +1,24 @@
-import { DEPARTMENTS, EXEC_ROLES, DEPT_ROLES, S } from "../constants/data";
+import { DEPARTMENTS, S } from "../constants/data";
 
 export default function MemberFormModal({ data, setData, onSave, onClose, onDelete, isEdit }) {
-  const isExec = EXEC_ROLES.includes(data.role);
-  const availableRoles = data.dept === "집행부" ? EXEC_ROLES : DEPT_ROLES;
+  // 모달 내부에서 사용할 직책 리스트 자체 정의 (import 에러 방지)
+  const EXEC_ROLES = ["회장", "부회장", "총무"];
+  const DEPT_ROLES = ["부장", "부원"];
+  
+  const availableRoles = data.dept === "회장단" ? EXEC_ROLES : DEPT_ROLES;
 
   function handleDeptChange(dept) {
-    const newRole = dept === "집행부" ? "회장" : "부원";
+    const newRole = dept === "회장단" ? "회장" : "부원";
     setData(p => ({ ...p, dept, role: newRole }));
   }
+  
   function handleRoleChange(role) {
-    if (EXEC_ROLES.includes(role)) setData(p => ({ ...p, role, dept:"집행부" }));
+    if (EXEC_ROLES.includes(role)) setData(p => ({ ...p, role, dept:"회장단" }));
     else setData(p => ({ ...p, role }));
   }
 
-  const deptOptions = ["집행부", ...DEPARTMENTS];
+  // 부서 선택 옵션 ("회장단"이 항상 맨 위에 오도록)
+  const deptOptions = ["회장단", ...DEPARTMENTS.filter(d => d !== "회장단")];
 
   return (
     <div style={S.overlay}>
