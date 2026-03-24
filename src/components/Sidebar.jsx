@@ -1,13 +1,16 @@
 import { BRAND, BRAND_LIGHT } from "../constants/data";
 
 export default function Sidebar({ tab, setTab }) {
+// src/components/Sidebar.jsx의 TABS 부분 수정
   const TABS = [
-    { id:"home",     label:"홈",       icon:"🏠" },
-    { id:"members",  label:"부원 관리", icon:"👥" },
-    { id:"minutes",  label:"회의록",    icon:"📋" },
-    { id:"logs",     label:"업무 일지", icon:"📝" },
-    { id:"calendar", label:"캘린더",    icon:"📅" },
+    { id:"home",           label:"홈",          icon:"🏠" },
+    { id:"members",        label:"부원 조직도",   icon:"👥" }, // 이름 변경
+    { id:"manage_members", label:"부원 관리",     icon:"⚙️" }, // 새 카테고리 추가
+    { id:"minutes",        label:"회의록",       icon:"📋" },
+    { id:"logs",           label:"업무 일지",     icon:"📝" },
+    { id:"calendar",       label:"캘린더",       icon:"📅" },
   ];
+
   return (
     <aside style={{
       width:220, minHeight:"100vh", background:"#fff",
