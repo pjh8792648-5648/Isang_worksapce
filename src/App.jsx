@@ -3,7 +3,10 @@ import { seedMembers, seedMinutes, seedLogs, seedEvents } from "./constants/data
 
 import Sidebar from "./components/Sidebar";
 import HomeTab from "./components/HomeTab";
+// src/App.jsx 
 import MembersTab from "./components/MembersTab";
+import ManageMembersTab from "./components/ManageMembersTab"; // 👈 추가
+// ... 다른 import들
 import MinutesTab from "./components/MinutesTab";
 import LogsTab from "./components/LogsTab";
 import CalendarTab from "./components/CalendarTab";
@@ -40,10 +43,10 @@ export default function App() {
           <HomeTab members={members} minutes={minutes} logs={logs} events={events}
             calYear={calYear} calMonth={calMonth} setMinuteModal={setMinuteModal} setTab={setTab} />
         )}
-        {tab==="members" && (
-          <MembersTab members={members} setMembers={setMembers} logs={logs}
-            memberModal={memberModal} setMemberModal={setMemberModal} />
+        {tab==="manage_members" && (
+          <ManageMembersTab members={members} setMembers={setMembers} />
         )}
+
         {tab==="minutes" && (
           <MinutesTab minutes={minutes} setMinutes={setMinutes}
             minuteModal={minuteModal} setMinuteModal={setMinuteModal}
