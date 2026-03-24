@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "../supabase"; // 👈 수파베이스 연동
 import MemberFormModal from "./MemberFormModal";
 import { DEPARTMENTS, DEPT_COLORS, ROLE_COLOR, S } from "../constants/data";
 
@@ -16,18 +17,29 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
     return order.indexOf(a.dept) - order.indexOf(b.dept);
   });
 
-  function saveNew() {
+  // ⭐ 수파베이스 저장/수정/삭제 로직 동일하게 적용
+  async function saveNew() {
     if (!form.name || !form.studentId) return;
-    setMembers(p => [...p, { ...form, id: Date.now() }]);
+    const newId = Date.now();
+    const newMember = { ...form, id: newId };
+    
+    setMembers(p => [...p, newMember]);
+    await supabase.from('members').insert([newMember]);
     setForm(emptyForm); setMemberModal(null);
   }
-  function saveEdit() {
+
+  async function saveEdit() {
     setMembers(p => p.map(m => m.id === editMember.id ? editMember : m));
+    await supabase.from('members').update(editMember).eq('id', editMember.id);
     setEditMember(null); setMemberModal(null);
   }
-  function del(id) {
-    setMembers(p => p.filter(m => m.id !== id));
-    setEditMember(null); setMemberModal(null);
+
+  async function del(id) {
+    if(window.confirm("정말 이 부원을 삭제하시겠습니까?")) {
+      setMembers(p => p.filter(m => m.id !== id));
+      await supabase.from('members').delete().eq('id', id);
+      setEditMember(null); setMemberModal(null);
+    }
   }
 
   const groups = groupFilter === "전체"
