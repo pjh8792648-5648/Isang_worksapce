@@ -8,11 +8,11 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
   const emptyForm = { name:"", dept:"기획부", role:"부원", studentId:"", phone:"", email:"", joinYear:2025 };
   const [form, setForm] = useState(emptyForm);
 
-  const filterOptions = ["전체", "집행부", ...DEPARTMENTS];
+  const filterOptions = ["전체", "회장단", ...DEPARTMENTS.filter(d => d !== "회장단")];
   const filtered = groupFilter === "전체" ? members : members.filter(m => m.dept === groupFilter);
 
   const sorted = [...filtered].sort((a, b) => {
-    const order = ["집행부", ...DEPARTMENTS];
+    const order = ["회장단", ...DEPARTMENTS.filter(d => d !== "회장단")];
     return order.indexOf(a.dept) - order.indexOf(b.dept);
   });
 
@@ -31,15 +31,15 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
   }
 
   const groups = groupFilter === "전체"
-    ? [{ label:"🎖 집행부", key:"집행부", color:"#4A8CFF" }, ...DEPARTMENTS.map(d=>({ label:`${d}`, key:d, color:DEPT_COLORS[d] }))]
-    : groupFilter === "집행부"
-      ? [{ label:"🎖 집행부", key:"집행부", color:"#4A8CFF" }]
+    ? [{ label:"🎖 회장단", key:"회장단", color:"#4A8CFF" }, ...DEPARTMENTS.filter(d => d !== "회장단").map(d=>({ label:`${d}`, key:d, color:DEPT_COLORS[d] }))]
+    : groupFilter === "회장단"
+      ? [{ label:"🎖 회장단", key:"회장단", color:"#4A8CFF" }]
       : [{ label:groupFilter, key:groupFilter, color:DEPT_COLORS[groupFilter] }];
 
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
-        <div style={S.sectionTitle}>👥 부원 관리</div>
+        <div style={S.sectionTitle}>👥 부원 조직도</div>
         <button style={S.btn()} onClick={()=>setMemberModal("add")}>+ 부원 등록</button>
       </div>
       <div style={{ display:"flex", gap:8, marginBottom:24 }}>
@@ -61,7 +61,7 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
               {gMembers.map(m => {
                 const c = ROLE_COLOR[m.role] || "#94A3B8";
-                const deptColor = m.dept === "집행부" ? "#4A8CFF" : (DEPT_COLORS[m.dept] || "#94A3B8");
+                const deptColor = DEPT_COLORS[m.dept] || "#94A3B8";
                 const mLogs = logs.filter(l=>l.memberId===m.id);
                 return (
                   <div key={m.id} style={{ ...S.card, cursor:"pointer", padding:18 }}
@@ -74,12 +74,12 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
                       </div>
                     </div>
                     <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap" }}>
-                      {m.dept !== "집행부" && <span style={S.tag(deptColor)}>{m.dept}</span>}
+                      {m.dept !== "회장단" && <span style={S.tag(deptColor)}>{m.dept}</span>}
                       <span style={S.tag(c)}>{m.role}</span>
                     </div>
                     <div style={{ fontSize:12, color:"#718096" }}>{m.phone}</div>
                     <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{m.email}</div>
-                    {m.dept !== "집행부" && (
+                    {m.dept !== "회장단" && (
                       <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #F0F5FF", display:"flex", justifyContent:"space-between" }}>
                         <span style={{ fontSize:11, color:"#94A3B8" }}>업무 {mLogs.length}건</span>
                         <span style={{ fontSize:11, color:"#38C9A0", fontWeight:700 }}>완료 {mLogs.filter(l=>l.status==="완료").length}건</span>
