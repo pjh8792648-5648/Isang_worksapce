@@ -61,7 +61,7 @@ export default function App() {
         )}
         {tab==="minutes" && (
           <MinutesTab minutes={minutes} setMinutes={setMinutes}
-            minuteModal={minuteModal} setMemberModal={setMemberModal}
+            minuteModal={minuteModal} setMinuteModal={setMinuteModal}
             minuteFilter={minuteFilter} setMinuteFilter={setMinuteFilter} />
         )}
         {tab==="logs" && (
