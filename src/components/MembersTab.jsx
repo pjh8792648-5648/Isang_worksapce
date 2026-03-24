@@ -60,7 +60,7 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
       </div>
 
       {groups.map(g => {
-        const gMembers = members.filter(m => m.dept === g.key);
+        const gMembers = sorted.filter(m => m.dept === g.key);
         if (gMembers.length === 0) return null;
         return (
           <div key={g.key} style={{ marginBottom:28 }}>
