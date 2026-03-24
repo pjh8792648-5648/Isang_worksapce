@@ -29,17 +29,54 @@ export default function App() {
     fetchAllData();
   }, []);
 
-  // ... (이하 상태 관리 코드 생략 - 이전 메시지의 전체 코드를 사용하세요)
+  const [calYear, setCalYear] = useState(2025);
+  const [calMonth, setCalMonth] = useState(2);
+  const [calMode, setCalMode] = useState("전체");
+  const [calDept, setCalDept] = useState("기획부");
+  const [calMemberId, setCalMemberId] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  const [memberModal, setMemberModal] = useState(null);
+  const [minuteModal, setMinuteModal] = useState(null);
+  const [logModal, setLogModal] = useState(null);
+  const [eventModal, setEventModal] = useState(null);
+  const [minuteFilter, setMinuteFilter] = useState("전체");
+  const [logFilter, setLogFilter] = useState("전체");
+
   return (
-    <div style={{ display:"flex", minHeight:"100vh", background:"#F0F4FA" }}>
+    <div style={{ fontFamily:"'Noto Sans KR', sans-serif", display:"flex", minHeight:"100vh", background:"#F0F4FA", color:"#1A202C" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
       <Sidebar tab={tab} setTab={setTab} />
-      <main style={{ marginLeft:220, flex:1, padding:32 }}>
-        {tab==="home" && <HomeTab members={members} minutes={minutes} logs={logs} events={events} setTab={setTab} />}
-        {tab==="members" && <MembersTab members={members} setMembers={setMembers} logs={logs} />}
-        {tab==="manage_members" && <ManageMembersTab members={members} setMembers={setMembers} />}
-        {tab==="minutes" && <MinutesTab minutes={minutes} setMinutes={setMinutes} />}
-        {tab==="logs" && <LogsTab members={members} logs={logs} setLogs={setLogs} />}
-        {tab==="calendar" && <CalendarTab members={members} logs={logs} events={events} setEvents={setEvents} />}
+      <main style={{ marginLeft:220, flex:1, padding:"32px 32px 40px", minHeight:"100vh" }}>
+        {tab==="home" && (
+          <HomeTab members={members} minutes={minutes} logs={logs} events={events}
+            calYear={calYear} calMonth={calMonth} setMinuteModal={setMinuteModal} setTab={setTab} />
+        )}
+        {tab==="members" && (
+          <MembersTab members={members} setMembers={setMembers} logs={logs}
+            memberModal={memberModal} setMemberModal={setMemberModal} />
+        )}
+        {tab==="manage_members" && (
+          <ManageMembersTab members={members} setMembers={setMembers} />
+        )}
+        {tab==="minutes" && (
+          <MinutesTab minutes={minutes} setMinutes={setMinutes}
+            minuteModal={minuteModal} setMinuteModal={setMinuteModal}
+            minuteFilter={minuteFilter} setMinuteFilter={setMinuteFilter} />
+        )}
+        {tab==="logs" && (
+          <LogsTab members={members} logs={logs} setLogs={setLogs}
+            logModal={logModal} setLogModal={setLogModal}
+            logFilter={logFilter} setLogFilter={setLogFilter} />
+        )}
+        {tab==="calendar" && (
+          <CalendarTab members={members} logs={logs} events={events} setEvents={setEvents}
+            calYear={calYear} setCalYear={setCalYear} calMonth={calMonth} setCalMonth={setCalMonth}
+            calMode={calMode} setCalMode={setCalMode} calDept={calDept} setCalDept={setCalDept}
+            calMemberId={calMemberId} setCalMemberId={setCalMemberId}
+            selectedDay={selectedDay} setSelectedDay={setSelectedDay}
+            eventModal={eventModal} setEventModal={setEventModal} />
+        )}
       </main>
     </div>
   );
