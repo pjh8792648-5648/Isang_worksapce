@@ -14,9 +14,11 @@ export default function ManageMembersTab({ members, setMembers }) {
     if (!form.name || !form.studentId) return alert("이름과 학번을 입력해주세요.");
     const newId = Date.now();
     const newMember = { ...form, id: newId };
+    
     setMembers(p => [...p, newMember]);
     const { error } = await supabase.from('members').insert([newMember]);
     if (error) alert("저장 중 오류: " + error.message);
+    
     setForm(emptyForm); setMemberModal(null);
   }
 
@@ -54,11 +56,12 @@ export default function ManageMembersTab({ members, setMembers }) {
             {members.map(m => (
               <tr key={m.id} style={{ borderBottom:"1px solid #F8FAFC" }}>
                 <td style={{ padding:11, fontWeight:700 }}>{m.name}</td>
-                <td><span style={S.tag(DEPT_COLORS[m.dept])}>{m.dept}</span></td>
-                <td><span style={S.tag(ROLE_COLOR[m.role])}>{m.role}</span></td>
+                <td><span style={S.tag(DEPT_COLORS[m.dept] || "#94A3B8")}>{m.dept}</span></td>
+                <td><span style={S.tag(ROLE_COLOR[m.role] || "#94A3B8")}>{m.role}</span></td>
                 <td style={{ color:"#4A5568" }}>{m.studentId}</td>
                 <td>
                   <button style={{...S.btn("ghost"), padding:"4px 8px"}} onClick={()=>{ setEditMember({...m}); setMemberModal("edit"); }}>수정</button>
+                  <button style={{...S.btn("danger"), padding:"4px 8px", marginLeft:6}} onClick={()=>del(m.id)}>삭제</button>
                 </td>
               </tr>
             ))}
