@@ -90,12 +90,6 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
                     </div>
                     <div style={{ fontSize:12, color:"#718096" }}>{m.phone}</div>
                     <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{m.email}</div>
-                    {m.dept !== "회장단" && (
-                      <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #F0F5FF", display:"flex", justifyContent:"space-between" }}>
-                        <span style={{ fontSize:11, color:"#94A3B8" }}>업무 {mLogs.length}건</span>
-                        <span style={{ fontSize:11, color:"#38C9A0", fontWeight:700 }}>완료 {mLogs.filter(l=>l.status==="완료").length}건</span>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -104,13 +98,8 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
         );
       })}
 
-      {memberModal==="add" && (
-        <MemberFormModal data={form} setData={setForm} onSave={saveNew} onClose={()=>setMemberModal(null)} />
-      )}
-      {memberModal==="edit" && editMember && (
-        <MemberFormModal data={editMember} setData={setEditMember} onSave={saveEdit}
-          onClose={()=>{ setMemberModal(null); setEditMember(null); }} onDelete={()=>del(editMember.id)} isEdit />
-      )}
+      {memberModal==="add" && <MemberFormModal data={form} setData={setForm} onSave={saveNew} onClose={()=>setMemberModal(null)} />}
+      {memberModal==="edit" && editMember && <MemberFormModal data={editMember} setData={setEditMember} onSave={saveEdit} onClose={()=>{ setMemberModal(null); setEditMember(null); }} onDelete={()=>del(editMember.id)} isEdit />}
     </div>
   );
 }
