@@ -17,7 +17,6 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
     return order.indexOf(a.dept) - order.indexOf(b.dept);
   });
 
-  // ⭐ 수파베이스 저장/수정/삭제
   async function saveNew() {
     if (!form.name || !form.studentId) return;
     const newId = Date.now();
