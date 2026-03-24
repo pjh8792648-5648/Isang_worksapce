@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "../supabase"; // 👈 수파베이스 연동
+import { supabase } from "../supabase"; 
 import MemberFormModal from "./MemberFormModal";
 import { DEPARTMENTS, DEPT_COLORS, ROLE_COLOR, S } from "../constants/data";
 
@@ -16,10 +16,9 @@ export default function ManageMembersTab({ members, setMembers }) {
     const newId = Date.now();
     const newMember = { ...form, id: newId };
     
-    // 1. 화면에 먼저 바로 추가 (답답하지 않게)
-    setMembers(p => [...p, newMember]);
+    setMembers(p => [...p, newMember]); // 화면에 먼저 바로 추가
     
-    // 2. 수파베이스 서버에 진짜 저장!
+    // 수파베이스 서버에 진짜 저장!
     const { error } = await supabase.from('members').insert([newMember]);
     if (error) alert("저장 중 오류가 발생했습니다: " + error.message);
 
