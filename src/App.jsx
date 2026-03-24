@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { seedMembers, seedMinutes, seedLogs, seedEvents } from "./constants/data";
+import { supabase } from "./supabase"; // 👈 우리가 만든 수파베이스 열쇠 불러오기!
 
 import Sidebar from "./components/Sidebar";
 import HomeTab from "./components/HomeTab";
@@ -9,35 +9,36 @@ import MinutesTab from "./components/MinutesTab";
 import LogsTab from "./components/LogsTab";
 import CalendarTab from "./components/CalendarTab";
 
-// 새로고침해도 데이터를 유지하기 위해 로컬 스토리지에서 불러오는 함수
-function getInitialData(key, fallbackData) {
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    return JSON.parse(saved); // 저장된 게 있으면 불러오기
-  }
-  return fallbackData; // 없으면 처음 기본 데이터 쓰기
-}
-
 export default function App() {
   const [tab, setTab] = useState("home");
   
-  // 상태 관리 (로컬 스토리지 연동)
-  // 👇 부서 이름 변경으로 데이터 충돌을 막기 위해 키값을 v2로 업데이트 (기존 데이터는 초기화됨)
-  const [members, setMembers] = useState(() => getInitialData("app_members_v2", seedMembers));
-  const [minutes, setMinutes] = useState(() => getInitialData("app_minutes_v2", seedMinutes));
-  const [logs, setLogs] = useState(() => getInitialData("app_logs_v2", seedLogs));
-  const [events, setEvents] = useState(() => getInitialData("app_events_v2", seedEvents));
+  // 1. 초기 데이터는 빈 배열([])로 비워둬! (서버에서 가져올 거니까)
+  const [members, setMembers] = useState([]);
+  const [minutes, setMinutes] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [events, setEvents] = useState([]);
 
-  // 데이터가 변경될 때마다 로컬 스토리지에 자동 저장
-  useEffect(() => { localStorage.setItem("app_members_v2", JSON.stringify(members)); }, [members]);
-  useEffect(() => { localStorage.setItem("app_minutes_v2", JSON.stringify(minutes)); }, [minutes]);
-  useEffect(() => { localStorage.setItem("app_logs_v2", JSON.stringify(logs)); }, [logs]);
-  useEffect(() => { localStorage.setItem("app_events_v2", JSON.stringify(events)); }, [events]);
+  // 2. 앱이 처음 켜질 때 수파베이스 서버에서 진짜 데이터를 싹 가져오기!
+  useEffect(() => {
+    async function fetchAllData() {
+      // 각 엑셀 표(테이블)에서 데이터 가져와라!
+      const { data: mData } = await supabase.from('members').select('*');
+      const { data: minData } = await supabase.from('minutes').select('*');
+      const { data: lData } = await supabase.from('logs').select('*');
+      const { data: eData } = await supabase.from('events').select('*');
+
+      // 가져온 데이터가 있으면 화면 데이터로 세팅!
+      if (mData) setMembers(mData);
+      if (minData) setMinutes(minData);
+      if (lData) setLogs(lData);
+      if (eData) setEvents(eData);
+    }
+    fetchAllData();
+  }, []);
 
   const [calYear, setCalYear] = useState(2025);
   const [calMonth, setCalMonth] = useState(2);
   const [calMode, setCalMode] = useState("전체");
-  // 👇 기본 선택 부서도 "기획부"로 설정 (회장단은 특별 취급)
   const [calDept, setCalDept] = useState("기획부");
   const [calMemberId, setCalMemberId] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -63,7 +64,7 @@ export default function App() {
             calYear={calYear} calMonth={calMonth} setMinuteModal={setMinuteModal} setTab={setTab} />
         )}
         
-        {/* 기존 조직도 형태의 부원 탭 */}
+        {/* 조직도 형태의 부원 탭 */}
         {tab==="members" && (
           <MembersTab members={members} setMembers={setMembers} logs={logs}
             memberModal={memberModal} setMemberModal={setMemberModal} />
