@@ -1,4 +1,3 @@
-// src/components/ManageMembersTab.jsx
 import { useState } from "react";
 import MemberFormModal from "./MemberFormModal";
 import { DEPARTMENTS, DEPT_COLORS, ROLE_COLOR, S } from "../constants/data";
@@ -46,7 +45,7 @@ export default function ManageMembersTab({ members, setMembers }) {
           </thead>
           <tbody>
             {members.map(m => {
-              const deptColor = m.dept === "집행부" ? "#4A8CFF" : (DEPT_COLORS[m.dept] || "#94A3B8");
+              const deptColor = DEPT_COLORS[m.dept] || "#94A3B8";
               return (
                 <tr key={m.id} style={{ borderBottom:"1px solid #F8FAFC" }}>
                   <td style={{ padding:"11px 12px", fontWeight:700, fontSize:13 }}>{m.name}</td>
