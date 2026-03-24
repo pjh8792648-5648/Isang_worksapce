@@ -15,18 +15,34 @@ export default function MinutesTab({ minutes, setMinutes, minuteModal, setMinute
     };
     reader.readAsDataURL(file);
   }
+
   function save() {
-    if (!form.title || !form.date) return;
-    setMinutes(p => [{ ...form, id:Date.now() }, ...p]);
+    if (!form.title || !form.date) return alert("제목과 날짜를 입력해주세요.");
+    
+    if (form.id) {
+      // 수정 모드
+      setMinutes(p => p.map(m => m.id === form.id ? form : m));
+    } else {
+      // 새 등록 모드
+      setMinutes(p => [{ ...form, id:Date.now() }, ...p]);
+    }
     setForm(emptyForm); setMinuteModal(null);
   }
+
+  function del(id) {
+    if(window.confirm("정말 이 회의록을 삭제하시겠습니까?")) {
+      setMinutes(p => p.filter(m => m.id !== id));
+      setMinuteModal(null);
+    }
+  }
+
   const filtered = minuteFilter==="전체" ? minutes : minutes.filter(m=>m.dept===minuteFilter);
 
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
         <div style={S.sectionTitle}>📋 회의록</div>
-        <button style={S.btn()} onClick={()=>setMinuteModal("add")}>+ 새 회의록</button>
+        <button style={S.btn()} onClick={() => { setForm(emptyForm); setMinuteModal("add"); }}>+ 새 회의록</button>
       </div>
       <div style={{ display:"flex", gap:8, marginBottom:18 }}>
         {["전체",...DEPARTMENTS].map(d=>(
@@ -55,12 +71,17 @@ export default function MinutesTab({ minutes, setMinutes, minuteModal, setMinute
         ))}
       </div>
 
+      {/* 회의록 상세 보기 모달 */}
       {minuteModal && typeof minuteModal === "object" && (
         <div style={S.overlay} onClick={()=>setMinuteModal(null)}>
           <div style={S.modal(600)} onClick={e=>e.stopPropagation()}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
               <span style={S.tag(DEPT_COLORS[minuteModal.dept])}>{minuteModal.dept}</span>
-              <button style={S.btn("ghost")} onClick={()=>setMinuteModal(null)}>✕</button>
+              <div style={{ display:"flex", gap: 8 }}>
+                <button style={{...S.btn("secondary"), padding:"6px 12px", fontSize:12}} onClick={() => { setForm(minuteModal); setMinuteModal("add"); }}>수정</button>
+                <button style={{...S.btn("danger"), padding:"6px 12px", fontSize:12}} onClick={() => del(minuteModal.id)}>삭제</button>
+                <button style={{...S.btn("ghost"), padding:"6px 12px"}} onClick={()=>setMinuteModal(null)}>✕</button>
+              </div>
             </div>
             <div style={{ fontSize:20, fontWeight:900, marginBottom:6 }}>{minuteModal.title}</div>
             <div style={{ fontSize:13, color:"#94A3B8", marginBottom:16 }}>{minuteModal.date} · 작성자: {minuteModal.author}</div>
@@ -87,10 +108,11 @@ export default function MinutesTab({ minutes, setMinutes, minuteModal, setMinute
         </div>
       )}
 
+      {/* 회의록 등록/수정 모달 */}
       {minuteModal==="add" && (
         <div style={S.overlay}>
           <div style={S.modal(560)}>
-            <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>새 회의록 등록</div>
+            <div style={{ fontSize:17, fontWeight:900, marginBottom:20 }}>{form.id ? "회의록 수정" : "새 회의록 등록"}</div>
             <div style={S.grid2}>
               <div><label style={S.label}>제목</label><input style={S.input} value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} /></div>
               <div><label style={S.label}>날짜</label><input style={S.input} type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))} /></div>
