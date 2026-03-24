@@ -22,20 +22,22 @@ export default function App() {
   const [tab, setTab] = useState("home");
   
   // 상태 관리 (로컬 스토리지 연동)
-  const [members, setMembers] = useState(() => getInitialData("app_members", seedMembers));
-  const [minutes, setMinutes] = useState(() => getInitialData("app_minutes", seedMinutes));
-  const [logs, setLogs] = useState(() => getInitialData("app_logs", seedLogs));
-  const [events, setEvents] = useState(() => getInitialData("app_events", seedEvents));
+  // 👇 부서 이름 변경으로 데이터 충돌을 막기 위해 키값을 v2로 업데이트 (기존 데이터는 초기화됨)
+  const [members, setMembers] = useState(() => getInitialData("app_members_v2", seedMembers));
+  const [minutes, setMinutes] = useState(() => getInitialData("app_minutes_v2", seedMinutes));
+  const [logs, setLogs] = useState(() => getInitialData("app_logs_v2", seedLogs));
+  const [events, setEvents] = useState(() => getInitialData("app_events_v2", seedEvents));
 
   // 데이터가 변경될 때마다 로컬 스토리지에 자동 저장
-  useEffect(() => { localStorage.setItem("app_members", JSON.stringify(members)); }, [members]);
-  useEffect(() => { localStorage.setItem("app_minutes", JSON.stringify(minutes)); }, [minutes]);
-  useEffect(() => { localStorage.setItem("app_logs", JSON.stringify(logs)); }, [logs]);
-  useEffect(() => { localStorage.setItem("app_events", JSON.stringify(events)); }, [events]);
+  useEffect(() => { localStorage.setItem("app_members_v2", JSON.stringify(members)); }, [members]);
+  useEffect(() => { localStorage.setItem("app_minutes_v2", JSON.stringify(minutes)); }, [minutes]);
+  useEffect(() => { localStorage.setItem("app_logs_v2", JSON.stringify(logs)); }, [logs]);
+  useEffect(() => { localStorage.setItem("app_events_v2", JSON.stringify(events)); }, [events]);
 
   const [calYear, setCalYear] = useState(2025);
   const [calMonth, setCalMonth] = useState(2);
   const [calMode, setCalMode] = useState("전체");
+  // 👇 기본 선택 부서도 "기획부"로 설정 (회장단은 특별 취급)
   const [calDept, setCalDept] = useState("기획부");
   const [calMemberId, setCalMemberId] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -67,7 +69,7 @@ export default function App() {
             memberModal={memberModal} setMemberModal={setMemberModal} />
         )}
 
-        {/* 새롭게 추가된 표 형태의 부원 관리 탭 */}
+        {/* 표 형태의 부원 관리 탭 */}
         {tab==="manage_members" && (
           <ManageMembersTab members={members} setMembers={setMembers} />
         )}
