@@ -1,12 +1,19 @@
 export const BRAND = "#4A8CFF";
 export const BRAND_LIGHT = "#EEF4FF";
-export const DEPT_COLORS = { "기획부": "#4A8CFF", "홍보부": "#FF6B6B", "복지부": "#38C9A0", "학습부": "#F59E0B" };
+
+// 👇 "집행부"를 "회장단"으로 변경하고 색상 할당
+export const DEPT_COLORS = { 
+  "회장단": "#4A8CFF", // 회장단 전용 색상
+  "기획부": "#8B5CF6", 
+  "홍보부": "#FF6B6B", 
+  "복지부": "#38C9A0", 
+  "학습부": "#F59E0B" 
+};
 export const DEPARTMENTS = Object.keys(DEPT_COLORS);
 export const STATUS_COLOR = { "완료": "#38C9A0", "진행중": "#F59E0B", "예정": "#94A3B8" };
 
-export const EXEC_ROLES = ["회장", "부회장", "총무"];
-export const DEPT_ROLES = ["부장", "부원"];
-export const ALL_ROLES = [...EXEC_ROLES, ...DEPT_ROLES];
+// 👇 역할도 회장단과 부서원으로 깔끔하게 분리
+export const ALL_ROLES = ["회장", "부회장", "총무", "부장", "부원"];
 
 export const MONTHS = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 
@@ -16,10 +23,11 @@ export const pad = n => String(n).padStart(2, "0");
 export const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 export const todayObj = () => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() }; };
 
+// 👇 초기 데이터 부서 및 역할 업데이트
 export const seedMembers = [
-  { id:1, name:"김지수", dept:"집행부", role:"회장",  studentId:"20210001", phone:"010-1234-5678", email:"jisu@hongik.ac.kr",    joinYear:2025 },
-  { id:2, name:"이민준", dept:"집행부", role:"부회장", studentId:"20210045", phone:"010-2345-6789", email:"minjun@hongik.ac.kr",  joinYear:2025 },
-  { id:3, name:"박소연", dept:"집행부", role:"총무",   studentId:"20220012", phone:"010-3456-7890", email:"soyeon@hongik.ac.kr",  joinYear:2025 },
+  { id:1, name:"김지수", dept:"회장단", role:"회장",  studentId:"20210001", phone:"010-1234-5678", email:"jisu@hongik.ac.kr",    joinYear:2025 },
+  { id:2, name:"이민준", dept:"회장단", role:"부회장", studentId:"20210045", phone:"010-2345-6789", email:"minjun@hongik.ac.kr",  joinYear:2025 },
+  { id:3, name:"박소연", dept:"회장단", role:"총무",   studentId:"20220012", phone:"010-3456-7890", email:"soyeon@hongik.ac.kr",  joinYear:2025 },
   { id:4, name:"최현우", dept:"기획부", role:"부장",   studentId:"20220067", phone:"010-4567-8901", email:"hyunwoo@hongik.ac.kr", joinYear:2025 },
   { id:5, name:"정다은", dept:"기획부", role:"부원",   studentId:"20230023", phone:"010-5678-9012", email:"daeun@hongik.ac.kr",   joinYear:2025 },
   { id:6, name:"한승민", dept:"홍보부", role:"부장",   studentId:"20230089", phone:"010-6789-0123", email:"seungmin@hongik.ac.kr",joinYear:2025 },
@@ -31,27 +39,21 @@ export const seedMembers = [
 ];
 
 export const seedMinutes = [
-  { id:1, title:"1차 정기회의", date:"2025-03-05", dept:"기획부", author:"최현우", summary:"OT 행사 기획안 논의 및 역할 분배", pdfName:"1차정기회의록.pdf", pdfData:null, secretaryName:"OT_서기록.pdf", secretaryData:null },
+  { id:1, title:"1차 정기회의", date:"2025-03-05", dept:"회장단", author:"김지수", summary:"OT 행사 기획안 논의 및 역할 분배", pdfName:"1차정기회의록.pdf", pdfData:null, secretaryName:"OT_서기록.pdf", secretaryData:null },
   { id:2, title:"SNS 운영 회의", date:"2025-03-12", dept:"홍보부", author:"한승민", summary:"인스타그램 콘텐츠 방향 결정", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null },
-  { id:3, title:"복지 예산 회의", date:"2025-03-20", dept:"복지부", author:"윤서준", summary:"1학기 복지 예산 배정 및 간식 행사 계획", pdfName:null, pdfData:null, secretaryName:null, secretaryData:null },
 ];
 
 export const seedEvents = [
-  { id:1, title:"신입생 OT",      date:"2025-03-15", dept:"기획부", memberId:null, memberName:"전체",  color:"#4A8CFF", type:"전체" },
-  { id:2, title:"인스타 업로드",   date:"2025-03-17", dept:"홍보부", memberId:7,   memberName:"오지현", color:"#FF6B6B", type:"개인" },
-  { id:3, title:"스터디 모집 마감",date:"2025-03-20", dept:"학습부", memberId:10,  memberName:"임도현", color:"#F59E0B", type:"개인" },
-  { id:4, title:"간식 행사",       date:"2025-03-25", dept:"복지부", memberId:8,   memberName:"윤서준", color:"#38C9A0", type:"개인" },
-  { id:5, title:"4월 정기회의",    date:"2025-04-02", dept:"기획부", memberId:null, memberName:"전체",  color:"#4A8CFF", type:"전체" },
-  { id:6, title:"기획부 전체회의", date:"2025-03-28", dept:"기획부", memberId:null, memberName:"기획부",color:"#4A8CFF", type:"부서" },
+  { id:1, title:"신입생 OT",      startDate:"2025-03-15", endDate:"2025-03-16", dept:"기획부", memberId:null, memberName:"전체",  color:"#8B5CF6", type:"전체" },
+  { id:2, title:"인스타 업로드",   startDate:"2025-03-17", endDate:"2025-03-17", dept:"홍보부", memberId:7,   memberName:"오지현", color:"#FF6B6B", type:"개인" },
+  { id:3, title:"스터디 모집 마감",startDate:"2025-03-20", endDate:"2025-03-20", dept:"학습부", memberId:10,  memberName:"임도현", color:"#F59E0B", type:"개인" },
+  { id:4, title:"중간고사",       startDate:"2025-04-20", endDate:"2025-04-26", dept:"회장단", memberId:null, memberName:"전체",  color:"#4A8CFF", type:"전체" },
 ];
 
 export const seedLogs = [
   { id:1, date:"2025-03-06", dept:"기획부", memberId:4,  member:"최현우", task:"OT 기획안 초안 작성",    status:"완료"  },
   { id:2, date:"2025-03-06", dept:"홍보부", memberId:6,  member:"한승민", task:"학과 SNS 계정 인수인계", status:"완료"  },
   { id:3, date:"2025-03-10", dept:"복지부", memberId:8,  member:"윤서준", task:"간식 업체 리스트업",      status:"진행중"},
-  { id:4, date:"2025-03-12", dept:"학습부", memberId:10, member:"임도현", task:"스터디 모집 공고문 작성", status:"진행중"},
-  { id:5, date:"2025-03-18", dept:"기획부", memberId:5,  member:"정다은", task:"OT 진행 대본 완성",       status:"예정"  },
-  { id:6, date:"2025-03-22", dept:"홍보부", memberId:7,  member:"오지현", task:"3월 카드뉴스 제작",       status:"진행중"},
 ];
 
 export const ROLE_COLOR = {
