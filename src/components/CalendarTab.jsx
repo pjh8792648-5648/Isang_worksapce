@@ -24,10 +24,7 @@ export default function CalendarTab({ members, logs, events, setEvents, calYear,
   function getEventsForDay(d) {
     const ds = `${calYear}-${pad(calMonth+1)}-${pad(d)}`;
     return getCalendarEvents().filter(e => {
-      // 기존에 date 하나만 저장되었던 데이터도 호환되도록 처리
-      const start = e.startDate || e.date;
-      const end = e.endDate || e.date;
-      return ds >= start && ds <= end; // 시작일과 마감일 사이면 화면에 표시
+      return ds >= e.startDate && ds <= e.endDate; // 시작일과 마감일 사이면 화면에 표시
     });
   }
   const dayEvts = selectedDay ? getEventsForDay(selectedDay) : [];
@@ -47,6 +44,7 @@ export default function CalendarTab({ members, logs, events, setEvents, calYear,
   function delEvent(id) {
     if(window.confirm("정말 이 일정을 삭제하시겠습니까?")) {
       setEvents(p => p.filter(e => e.id !== id));
+      setSelectedDay(null); // 삭제 후 날짜 선택 해제
     }
   }
 
@@ -148,7 +146,7 @@ export default function CalendarTab({ members, logs, events, setEvents, calYear,
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ fontWeight:800, fontSize:14 }}>{e.title}</div>
                   <div style={{ display:"flex", gap:4 }}>
-                    <button style={{...S.btn("ghost"), padding:"2px 6px", fontSize:10, border:"1px solid #E2E8F0"}} onClick={()=>{ setEForm({ ...e, startDate: e.startDate || e.date, endDate: e.endDate || e.date }); setEventModal("add"); }}>수정</button>
+                    <button style={{...S.btn("ghost"), padding:"2px 6px", fontSize:10, border:"1px solid #E2E8F0"}} onClick={()=>{ setEForm({ ...e }); setEventModal("add"); }}>수정</button>
                     <button style={{...S.btn("danger"), padding:"2px 6px", fontSize:10}} onClick={()=>delEvent(e.id)}>삭제</button>
                   </div>
                 </div>
@@ -157,8 +155,8 @@ export default function CalendarTab({ members, logs, events, setEvents, calYear,
                   <span style={{ fontSize:11, color:"#94A3B8" }}>{e.memberName}</span>
                 </div>
                 {/* 다중 일자일 경우 기간 표시 */}
-                {((e.startDate || e.date) !== (e.endDate || e.date)) && (
-                  <div style={{ fontSize:10, color:"#718096", marginTop:4 }}>기간: {e.startDate || e.date} ~ {e.endDate || e.date}</div>
+                {(e.startDate !== e.endDate) && (
+                  <div style={{ fontSize:10, color:"#718096", marginTop:4 }}>기간: {e.startDate} ~ {e.endDate}</div>
                 )}
               </div>
             ))}
