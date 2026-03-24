@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "../supabase"; // 👈 수파베이스 연동
+import { supabase } from "../supabase"; 
 import MemberFormModal from "./MemberFormModal";
 import { DEPARTMENTS, DEPT_COLORS, ROLE_COLOR, S } from "../constants/data";
 
@@ -17,7 +17,7 @@ export default function MembersTab({ members, setMembers, logs, memberModal, set
     return order.indexOf(a.dept) - order.indexOf(b.dept);
   });
 
-  // ⭐ 수파베이스 저장/수정/삭제 로직 동일하게 적용
+  // ⭐ 수파베이스 저장/수정/삭제
   async function saveNew() {
     if (!form.name || !form.studentId) return;
     const newId = Date.now();
